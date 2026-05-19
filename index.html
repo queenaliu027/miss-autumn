@@ -1,0 +1,1073 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+<title>Miss Autumn的记账本</title>
+<script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.umd.min.js"></script>
+<style>
+:root {
+  --bg: #f5f7fa; --bg-card: #ffffff; --bg-input: #f0f2f5;
+  --text: #1a1a2e; --text-secondary: #6b7280; --text-tertiary: #9ca3af;
+  --primary: #6c5ce7; --primary-light: #a29bfe; --primary-bg: rgba(108,92,231,0.1);
+  --income: #00b894; --income-bg: rgba(0,184,148,0.1);
+  --expense: #e17055; --expense-bg: rgba(225,112,85,0.1);
+  --transfer: #6c5ce7; --transfer-bg: rgba(108,92,231,0.1);
+  --border: #e5e7eb; --shadow: 0 2px 12px rgba(0,0,0,0.08); --shadow-lg: 0 8px 30px rgba(0,0,0,0.12);
+  --radius: 16px; --radius-sm: 10px; --safe-bottom: env(safe-area-inset-bottom, 0px);
+  --net-positive: #00b894; --net-negative: #e17055;
+  --budget-safe: #00b894; --budget-warn: #f39c12; --budget-danger: #e17055;
+  --invest-color: #6c5ce7; --invest-bg: rgba(108,92,231,0.1);
+}
+[data-theme="dark"] {
+  --bg: #0f0f1a; --bg-card: #1a1a2e; --bg-input: #252540;
+  --text: #e8e8f0; --text-secondary: #9ca3af; --text-tertiary: #6b7280;
+  --primary: #a29bfe; --primary-light: #6c5ce7; --primary-bg: rgba(162,155,254,0.15);
+  --income: #55efc4; --income-bg: rgba(85,239,196,0.15);
+  --expense: #ff7675; --expense-bg: rgba(255,118,117,0.15);
+  --transfer: #a29bfe; --transfer-bg: rgba(162,155,254,0.15);
+  --border: #2d2d44; --shadow: 0 2px 12px rgba(0,0,0,0.3); --shadow-lg: 0 8px 30px rgba(0,0,0,0.4);
+  --net-positive: #55efc4; --net-negative: #ff7675;
+  --budget-safe: #55efc4; --budget-warn: #f1c40f; --budget-danger: #ff7675;
+  --invest-color: #a29bfe; --invest-bg: rgba(162,155,254,0.15);
+}
+* { margin:0; padding:0; box-sizing:border-box; }
+html, body { height:100%; overflow:hidden; }
+body { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', 'PingFang SC', 'Hiragino Sans GB', 'Microsoft YaHei', sans-serif; background: var(--bg); color: var(--text); transition: background 0.3s, color 0.3s; }
+.app-container { height: 100%; display: flex; flex-direction: column; max-width: 480px; margin: 0 auto; }
+@media(min-width:768px) { .app-container { max-width: 800px; } }
+.page-content { flex: 1; overflow-y: auto; overflow-x: hidden; padding: 0 16px 16px; -webkit-overflow-scrolling: touch; scrollbar-width: none; }
+.page-content::-webkit-scrollbar { display: none; }
+.page { display: none; animation: fadeIn 0.3s ease; }
+.page.active { display: block; }
+@keyframes fadeIn { from{opacity:0;transform:translateY(8px)} to{opacity:1;transform:translateY(0)} }
+@keyframes slideUp { from{opacity:0;transform:translateY(20px)} to{opacity:1;transform:translateY(0)} }
+@keyframes pulse { 0%,100%{transform:scale(1)} 50%{transform:scale(1.05)} }
+@keyframes ripple { 0%{transform:scale(0.8);opacity:1} 100%{transform:scale(2.4);opacity:0} }
+@keyframes micPulse { 0%,100%{box-shadow:0 0 0 0 rgba(225,112,85,0.4)} 50%{box-shadow:0 0 0 16px rgba(225,112,85,0)} }
+@keyframes wave { 0%,100%{height:8px} 50%{height:20px} }
+.page-header { padding: 16px 4px 8px; font-size: 24px; font-weight: 700; display: flex; align-items: center; justify-content: space-between; }
+.page-header .subtitle { font-size: 13px; color: var(--text-secondary); font-weight: 400; }
+.card { background: var(--bg-card); border-radius: var(--radius); padding: 20px; margin-bottom: 16px; box-shadow: var(--shadow); animation: slideUp 0.4s ease; }
+.card-title { font-size: 13px; color: var(--text-secondary); margin-bottom: 8px; display: flex; align-items: center; gap: 6px; }
+.card-amount { font-size: 32px; font-weight: 700; letter-spacing: -1px; }
+.card-amount.net-positive { color: var(--net-positive); }
+.card-amount.net-negative { color: var(--net-negative); }
+.stats-row { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; margin-bottom: 16px; }
+.stats-row-3 { display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 10px; margin-bottom: 16px; }
+.stats-row-4 { display: grid; grid-template-columns: 1fr 1fr 1fr 1fr; gap: 8px; margin-bottom: 16px; }
+.stat-card { background: var(--bg-card); border-radius: var(--radius-sm); padding: 16px; box-shadow: var(--shadow); animation: slideUp 0.4s ease; }
+.stat-card .label { font-size: 12px; color: var(--text-secondary); margin-bottom: 4px; }
+.stat-card .value { font-size: 18px; font-weight: 700; }
+.stat-card .value.income { color: var(--income); }
+.stat-card .value.expense { color: var(--expense); }
+.stat-card .value.net-positive { color: var(--net-positive); }
+.stat-card .value.net-negative { color: var(--net-negative); }
+.stat-card .value.invest { color: var(--invest-color); }
+.account-chips { display: flex; gap: 10px; overflow-x: auto; padding: 4px 0 12px; scrollbar-width: none; }
+.account-chips::-webkit-scrollbar { display: none; }
+.account-chip { flex-shrink: 0; background: var(--bg-card); border-radius: var(--radius-sm); padding: 12px 16px; min-width: 130px; box-shadow: var(--shadow); cursor: pointer; transition: all 0.2s; }
+.account-chip:active { transform: scale(0.96); }
+.account-chip .name { font-size: 12px; color: var(--text-secondary); margin-bottom: 4px; }
+.account-chip .balance { font-size: 18px; font-weight: 600; }
+.account-chip .balance.liability { color: var(--net-negative); }
+.account-chip .balance.net-positive { color: var(--net-positive); }
+.account-chip .balance.net-negative { color: var(--net-negative); }
+.account-chip .type-badge { display: inline-block; font-size: 10px; padding: 1px 6px; border-radius: 8px; margin-top: 4px; }
+.account-chip .type-badge.asset-badge { background: var(--income-bg); color: var(--income); }
+.account-chip .type-badge.liability-badge { background: var(--expense-bg); color: var(--expense); }
+.section-title { font-size: 15px; font-weight: 600; margin: 20px 0 12px; display: flex; align-items: center; justify-content: space-between; }
+.section-title .more { font-size: 13px; color: var(--primary); cursor: pointer; }
+.tx-list { }
+.tx-date-group { margin-bottom: 16px; }
+.tx-date { font-size: 12px; color: var(--text-tertiary); margin-bottom: 8px; padding-left: 4px; }
+.tx-item { display: flex; align-items: center; gap: 12px; padding: 12px; background: var(--bg-card); border-radius: var(--radius-sm); margin-bottom: 8px; box-shadow: var(--shadow); cursor: pointer; position: relative; overflow: hidden; }
+.tx-item:active { transform: scale(0.98); }
+.tx-icon { width: 40px; height: 40px; border-radius: 12px; display: flex; align-items: center; justify-content: center; font-size: 20px; flex-shrink: 0; }
+.tx-icon.income { background: var(--income-bg); }
+.tx-icon.expense { background: var(--expense-bg); }
+.tx-icon.transfer { background: var(--transfer-bg); }
+.tx-icon.invest { background: var(--invest-bg); }
+.tx-info { flex: 1; min-width: 0; }
+.tx-info .category { font-size: 14px; font-weight: 500; }
+.tx-info .note { font-size: 12px; color: var(--text-secondary); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.tx-info .account-tag { font-size: 11px; color: var(--text-tertiary); margin-top: 2px; }
+.tx-amount { font-size: 16px; font-weight: 600; flex-shrink: 0; }
+.tx-amount.income { color: var(--income); }
+.tx-amount.expense { color: var(--expense); }
+.tx-amount.transfer { color: var(--transfer); }
+.tx-amount.invest { color: var(--invest-color); }
+.tx-delete { position: absolute; right: -50px; top: 0; bottom: 0; width: 50px; background: var(--expense); color: #fff; display: flex; align-items: center; justify-content: center; transition: right 0.3s; cursor: pointer; font-size: 13px; }
+.tx-item.show-delete .tx-delete { right: 0; }
+.record-input-area { background: var(--bg-card); border-radius: var(--radius); padding: 20px; box-shadow: var(--shadow); margin-bottom: 16px; }
+.input-row { display: flex; gap: 10px; align-items: flex-end; }
+.input-wrapper { flex: 1; position: relative; }
+.input-wrapper textarea, .input-wrapper input { width: 100%; background: var(--bg-input); border: 2px solid transparent; border-radius: var(--radius-sm); padding: 14px 16px; font-size: 15px; color: var(--text); outline: none; font-family: inherit; resize: none; }
+.input-wrapper textarea { min-height: 80px; line-height: 1.5; }
+.input-wrapper textarea:focus, .input-wrapper input:focus { border-color: var(--primary); }
+.input-wrapper textarea::placeholder, .input-wrapper input::placeholder { color: var(--text-tertiary); }
+.mic-btn { width: 52px; height: 52px; border-radius: 50%; border: none; background: var(--expense); color: #fff; font-size: 22px; cursor: pointer; display: flex; align-items: center; justify-content: center; flex-shrink: 0; position: relative; }
+.mic-btn.recording { animation: micPulse 1.2s infinite; background: #d63031; }
+.mic-btn:disabled { opacity: 0.4; cursor: not-allowed; }
+.submit-btn { width: 100%; padding: 14px; border: none; border-radius: var(--radius-sm); background: var(--primary); color: #fff; font-size: 16px; font-weight: 600; cursor: pointer; margin-top: 12px; }
+.submit-btn:active { transform: scale(0.97); }
+.parsed-result { background: var(--primary-bg); border-radius: var(--radius-sm); padding: 16px; margin-top: 12px; display: none; animation: slideUp 0.3s; }
+.parsed-result.show { display: block; }
+.parsed-row { display: flex; justify-content: space-between; align-items: center; padding: 6px 0; font-size: 14px; }
+.parsed-row .label { color: var(--text-secondary); }
+.parsed-row .value { font-weight: 500; }
+.parsed-row .value.income { color: var(--income); }
+.parsed-row .value.expense { color: var(--expense); }
+.parsed-row .value.transfer { color: var(--transfer); }
+.parsed-row .value.invest { color: var(--invest-color); }
+.selector-row { display: flex; gap: 8px; margin-top: 12px; flex-wrap: wrap; }
+.selector-row select { flex: 1; min-width: 100px; padding: 10px 12px; background: var(--bg-input); border: 2px solid transparent; border-radius: var(--radius-sm); color: var(--text); font-size: 14px; outline: none; font-family: inherit; cursor: pointer; appearance: none; -webkit-appearance: none; background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='12' fill='%236b7280' viewBox='0 0 16 16'%3E%3Cpath d='M8 11L3 6h10l-5 5z'/%3E%3C/svg%3E"); background-repeat: no-repeat; background-position: right 12px center; }
+.selector-row select:focus { border-color: var(--primary); }
+.chart-container { background: var(--bg-card); border-radius: var(--radius); padding: 20px; margin-bottom: 16px; box-shadow: var(--shadow); }
+.chart-container canvas { max-height: 300px; }
+.setting-group { background: var(--bg-card); border-radius: var(--radius); overflow: hidden; margin-bottom: 16px; box-shadow: var(--shadow); }
+.setting-group-title { padding: 14px 20px 8px; font-size: 12px; color: var(--text-secondary); text-transform: uppercase; letter-spacing: 1px; }
+.setting-item { padding: 14px 20px; display: flex; align-items: center; justify-content: space-between; border-bottom: 1px solid var(--border); cursor: pointer; transition: background 0.2s; }
+.setting-item:last-child { border-bottom: none; }
+.setting-item:active { background: var(--bg-input); }
+.setting-item .left { display: flex; align-items: center; gap: 12px; }
+.setting-item .icon { font-size: 20px; width: 32px; text-align: center; }
+.setting-item .label { font-size: 15px; }
+.setting-item .right { display: flex; align-items: center; gap: 8px; color: var(--text-secondary); font-size: 13px; }
+.toggle { width: 48px; height: 28px; background: var(--border); border-radius: 14px; position: relative; cursor: pointer; transition: background 0.3s; }
+.toggle.active { background: var(--primary); }
+.toggle::after { content: ''; position: absolute; width: 22px; height: 22px; background: #fff; border-radius: 50%; top: 3px; left: 3px; transition: transform 0.3s; box-shadow: 0 1px 3px rgba(0,0,0,0.2); }
+.toggle.active::after { transform: translateX(20px); }
+.tag-list { display: flex; flex-wrap: wrap; gap: 8px; padding: 12px 20px 16px; }
+.tag-item { display: inline-flex; align-items: center; gap: 4px; padding: 8px 14px; background: var(--bg-input); border-radius: 20px; font-size: 14px; cursor: pointer; transition: all 0.2s; }
+.tag-item:active { transform: scale(0.95); }
+.tag-item .emoji { font-size: 16px; }
+.tag-item .remove { margin-left: 4px; color: var(--text-tertiary); font-size: 16px; line-height: 1; }
+.add-tag-btn { display: inline-flex; align-items: center; gap: 4px; padding: 8px 14px; background: var(--primary-bg); border: 2px dashed var(--primary); border-radius: 20px; font-size: 14px; color: var(--primary); cursor: pointer; }
+.modal-overlay { position: fixed; inset: 0; background: rgba(0,0,0,0.5); z-index: 1000; display: flex; align-items: flex-end; justify-content: center; opacity: 0; pointer-events: none; transition: opacity 0.3s; }
+.modal-overlay.show { opacity: 1; pointer-events: auto; }
+.modal { background: var(--bg-card); border-radius: var(--radius) var(--radius) 0 0; padding: 24px 20px calc(24px + var(--safe-bottom)); width: 100%; max-width: 480px; max-height: 80vh; overflow-y: auto; transform: translateY(100%); transition: transform 0.3s; }
+.modal-overlay.show .modal { transform: translateY(0); }
+.modal-title { font-size: 18px; font-weight: 600; margin-bottom: 20px; text-align: center; }
+.modal-input { width: 100%; padding: 12px 16px; background: var(--bg-input); border: 2px solid transparent; border-radius: var(--radius-sm); color: var(--text); font-size: 15px; outline: none; margin-bottom: 12px; font-family: inherit; }
+.modal-input:focus { border-color: var(--primary); }
+.modal-btn { width: 100%; padding: 14px; border: none; border-radius: var(--radius-sm); font-size: 16px; font-weight: 600; cursor: pointer; margin-top: 8px; }
+.modal-btn.primary { background: var(--primary); color: #fff; }
+.modal-btn.danger { background: var(--expense); color: #fff; }
+.modal-btn.secondary { background: var(--bg-input); color: var(--text); }
+.tab-bar { display: flex; background: var(--bg-card); border-top: 1px solid var(--border); padding-bottom: var(--safe-bottom); flex-shrink: 0; }
+.tab-item { flex: 1; display: flex; flex-direction: column; align-items: center; justify-content: center; padding: 8px 0; cursor: pointer; gap: 2px; border: none; background: none; color: var(--text-tertiary); font-family: inherit; }
+.tab-item .tab-icon { font-size: 22px; }
+.tab-item .tab-label { font-size: 10px; font-weight: 500; }
+.tab-item.active { color: var(--primary); }
+.tab-item.record-tab .tab-icon { width: 44px; height: 44px; background: var(--primary); color: #fff; border-radius: 50%; display: flex; align-items: center; justify-content: center; font-size: 24px; margin-top: -20px; box-shadow: 0 4px 12px rgba(108,92,231,0.4); }
+.empty-state { text-align: center; padding: 40px 20px; color: var(--text-tertiary); }
+.empty-state .emoji { font-size: 48px; margin-bottom: 12px; }
+.toast { position: fixed; top: 60px; left: 50%; transform: translateX(-50%) translateY(-100px); background: var(--bg-card); color: var(--text); padding: 12px 24px; border-radius: 25px; font-size: 14px; box-shadow: var(--shadow-lg); z-index: 2000; transition: transform 0.4s cubic-bezier(0.34,1.56,0.64,1); white-space: nowrap; }
+.toast.show { transform: translateX(-50%) translateY(0); }
+.quick-amounts { display: flex; gap: 8px; margin-top: 10px; flex-wrap: wrap; }
+.quick-amt { padding: 6px 14px; background: var(--bg-input); border: none; border-radius: 20px; font-size: 13px; color: var(--text); cursor: pointer; font-family: inherit; }
+.quick-amt:active { transform: scale(0.95); }
+.type-toggle { display: flex; background: var(--bg-input); border-radius: var(--radius-sm); padding: 4px; margin-bottom: 12px; }
+.type-toggle-btn { flex: 1; padding: 8px; border: none; background: none; border-radius: 8px; font-size: 14px; font-weight: 500; cursor: pointer; color: var(--text-secondary); font-family: inherit; }
+.type-toggle-btn.active.expense-type { background: var(--expense); color: #fff; }
+.type-toggle-btn.active.income-type { background: var(--income); color: #fff; }
+.type-toggle-btn.active.transfer-type { background: var(--transfer); color: #fff; }
+.transfer-fields { display: none; margin-top: 8px; }
+.transfer-fields.show { display: block; }
+.transfer-arrow { text-align: center; font-size: 18px; color: var(--primary); margin: 4px 0; }
+.field-group { margin-bottom: 12px; }
+.field-group label { display: block; font-size: 13px; color: var(--text-secondary); margin-bottom: 6px; }
+.field-group input, .field-group select { width: 100%; padding: 10px 14px; background: var(--bg-input); border: 2px solid transparent; border-radius: var(--radius-sm); color: var(--text); font-size: 14px; outline: none; font-family: inherit; }
+.field-group input:focus, .field-group select:focus { border-color: var(--primary); }
+.emoji-grid { display: grid; grid-template-columns: repeat(8, 1fr); gap: 4px; max-height: 150px; overflow-y: auto; padding: 8px; background: var(--bg-input); border-radius: var(--radius-sm); }
+.emoji-option { width: 36px; height: 36px; display: flex; align-items: center; justify-content: center; font-size: 20px; cursor: pointer; border-radius: 8px; border: none; background: none; }
+.emoji-option:active { background: var(--primary-bg); transform: scale(1.2); }
+.emoji-option.selected { background: var(--primary-bg); outline: 2px solid var(--primary); }
+.voice-indicator { display: none; align-items: center; justify-content: center; gap: 8px; padding: 12px; color: var(--expense); font-size: 14px; }
+.voice-indicator.show { display: flex; }
+.voice-wave { display: flex; align-items: center; gap: 3px; height: 20px; }
+.voice-wave span { width: 3px; height: 8px; background: var(--expense); border-radius: 2px; animation: wave 0.6s infinite ease-in-out; }
+.period-tabs { display: flex; gap: 8px; margin-bottom: 16px; }
+.period-tab { padding: 8px 16px; border-radius: 20px; border: none; background: var(--bg-input); color: var(--text-secondary); font-size: 13px; cursor: pointer; font-family: inherit; }
+.period-tab.active { background: var(--primary); color: #fff; }
+.stat-sub-tabs { display: flex; gap: 0; margin-bottom: 16px; background: var(--bg-input); border-radius: var(--radius-sm); padding: 3px; }
+.stat-sub-tab { flex: 1; padding: 8px 4px; border: none; background: none; border-radius: 8px; font-size: 13px; font-weight: 500; cursor: pointer; color: var(--text-secondary); font-family: inherit; text-align: center; }
+.stat-sub-tab.active { background: var(--primary); color: #fff; }
+.budget-progress-section { background: var(--bg-card); border-radius: var(--radius); padding: 16px; margin-bottom: 16px; box-shadow: var(--shadow); animation: slideUp 0.4s ease; }
+.budget-progress-section .budget-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 10px; }
+.budget-progress-section .budget-header .title { font-size: 14px; font-weight: 600; }
+.budget-progress-section .budget-header .amount { font-size: 13px; color: var(--text-secondary); }
+.budget-bar-bg { width: 100%; height: 12px; background: var(--bg-input); border-radius: 6px; overflow: hidden; }
+.budget-bar-fill { height: 100%; border-radius: 6px; transition: width 0.5s ease; min-width: 0; }
+.budget-bar-fill.safe { background: linear-gradient(90deg, #00b894, #55efc4); }
+.budget-bar-fill.warn { background: linear-gradient(90deg, #f39c12, #fdcb6e); }
+.budget-bar-fill.danger { background: linear-gradient(90deg, #e17055, #ff7675); }
+.budget-bar-fill.over { background: linear-gradient(90deg, #d63031, #ff7675); animation: pulse 1.5s infinite; }
+.budget-bar-fill.invest-safe { background: linear-gradient(90deg, #6c5ce7, #a29bfe); }
+.budget-bar-fill.invest-warn { background: linear-gradient(90deg, #f39c12, #fdcb6e); }
+.budget-bar-fill.invest-over { background: linear-gradient(90deg, #d63031, #ff7675); animation: pulse 1.5s infinite; }
+.budget-section-divider { font-size: 13px; font-weight: 600; color: var(--primary); padding: 12px 0 6px; margin-top: 8px; border-top: 1px solid var(--border); display: flex; align-items: center; gap: 6px; }
+.wealth-env-card { background: rgba(255,255,255,0.12); border-radius: 10px; padding: 10px 12px; margin-top: 10px; }
+.wealth-env-card-title { font-size: 13px; font-weight: 600; margin-bottom: 8px; display: flex; align-items: center; gap: 4px; }
+.wealth-env-row { display: flex; align-items: center; gap: 8px; padding: 6px 0; border-bottom: 1px solid rgba(255,255,255,0.1); }
+.wealth-env-row:last-child { border-bottom: none; }
+.wealth-env-row .env-icon { font-size: 16px; flex-shrink: 0; }
+.wealth-env-row .env-name { font-size: 12px; flex: 1; min-width: 0; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.wealth-env-row .env-amounts { font-size: 11px; opacity: 0.85; text-align: right; white-space: nowrap; }
+.wealth-env-bar-bg { width: 100%; height: 6px; background: rgba(255,255,255,0.15); border-radius: 3px; overflow: hidden; margin-top: 2px; }
+.wealth-env-bar-fill { height: 100%; border-radius: 3px; transition: width 0.5s ease; min-width: 0; }
+.budget-labels { display: flex; justify-content: space-between; margin-top: 6px; font-size: 11px; color: var(--text-tertiary); }
+.budget-cat-item { padding: 10px 0; border-bottom: 1px solid var(--border); }
+.budget-cat-item:last-child { border-bottom: none; }
+.budget-cat-item .cat-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 6px; }
+.budget-cat-item .cat-name { font-size: 13px; font-weight: 500; display: flex; align-items: center; gap: 4px; }
+.budget-cat-item .cat-amounts { font-size: 12px; color: var(--text-secondary); }
+.budget-cat-item .cat-amounts.over { color: var(--budget-danger); font-weight: 600; }
+.envelope-badge { display: inline-block; font-size: 10px; padding: 1px 6px; border-radius: 8px; }
+.envelope-badge.spending-badge { background: var(--expense-bg); color: var(--expense); }
+.envelope-badge.investing-badge { background: var(--invest-bg); color: var(--invest-color); }
+.wealth-hero { background: linear-gradient(135deg, #6c5ce7, #a29bfe, #74b9ff); border-radius: var(--radius); padding: 24px 20px; margin-bottom: 16px; color: #fff; box-shadow: 0 8px 30px rgba(108,92,231,0.3); animation: slideUp 0.4s ease; }
+.wealth-hero .hero-label { font-size: 13px; opacity: 0.8; margin-bottom: 4px; }
+.wealth-hero .hero-amount { font-size: 36px; font-weight: 800; letter-spacing: -1.5px; margin-bottom: 16px; }
+.wealth-hero .hero-row { display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 12px; }
+.wealth-hero .hero-stat .label { font-size: 11px; opacity: 0.7; margin-bottom: 2px; }
+.wealth-hero .hero-stat .value { font-size: 18px; font-weight: 700; }
+.wealth-dim-tabs { display: flex; gap: 8px; margin-bottom: 16px; }
+.wealth-dim-tab { padding: 8px 16px; border-radius: 20px; border: none; background: var(--bg-input); color: var(--text-secondary); font-size: 13px; cursor: pointer; font-family: inherit; }
+.wealth-dim-tab.active { background: var(--primary); color: #fff; }
+.wealth-compare-card { background: var(--bg-card); border-radius: var(--radius-sm); padding: 14px 16px; margin-bottom: 8px; box-shadow: var(--shadow); display: flex; justify-content: space-between; align-items: center; }
+.wealth-compare-card .wc-label { font-size: 14px; color: var(--text-secondary); }
+.wealth-compare-card .wc-value { font-size: 16px; font-weight: 600; }
+.wealth-compare-card .wc-change { font-size: 12px; margin-left: 8px; padding: 2px 8px; border-radius: 10px; }
+.wealth-compare-card .wc-change.up { background: var(--income-bg); color: var(--income); }
+.wealth-compare-card .wc-change.down { background: var(--expense-bg); color: var(--expense); }
+.wealth-compare-card .wc-change.neutral { background: var(--bg-input); color: var(--text-secondary); }
+.budget-input-row { display: flex; align-items: center; gap: 8px; margin-bottom: 10px; padding: 8px 0; border-bottom: 1px solid var(--border); }
+.budget-input-row:last-child { border-bottom: none; }
+.budget-input-row .cat-emoji { font-size: 20px; flex-shrink: 0; width: 28px; text-align: center; }
+.budget-input-row .cat-name-label { font-size: 14px; flex: 1; }
+.budget-input-row .cat-type-badge { font-size: 10px; padding: 1px 6px; border-radius: 8px; flex-shrink: 0; }
+.budget-input-row .cat-type-badge.asset { background: var(--income-bg); color: var(--income); }
+.budget-input-row .cat-type-badge.investing { background: var(--invest-bg); color: var(--invest-color); }
+.budget-input-row input { width: 100px; padding: 8px 10px; background: var(--bg-input); border: 2px solid transparent; border-radius: var(--radius-sm); color: var(--text); font-size: 14px; outline: none; font-family: inherit; text-align: right; }
+.budget-input-row input:focus { border-color: var(--primary); }
+.budget-input-row .unit { font-size: 13px; color: var(--text-secondary); flex-shrink: 0; }
+.budget-analysis-table { width: 100%; border-collapse: collapse; font-size: 13px; }
+.budget-analysis-table th { text-align: left; padding: 8px 6px; color: var(--text-secondary); font-weight: 500; border-bottom: 2px solid var(--border); }
+.budget-analysis-table td { padding: 8px 6px; border-bottom: 1px solid var(--border); }
+.budget-analysis-table .over-budget { color: var(--budget-danger); font-weight: 600; }
+.budget-analysis-table .under-budget { color: var(--budget-safe); }
+.account-type-toggle { display: flex; background: var(--bg-input); border-radius: var(--radius-sm); padding: 3px; margin-bottom: 12px; }
+.account-type-btn { flex: 1; padding: 8px; border: none; background: none; border-radius: 8px; font-size: 13px; font-weight: 500; cursor: pointer; color: var(--text-secondary); font-family: inherit; }
+.account-type-btn.active.asset-type { background: var(--income); color: #fff; }
+.account-type-btn.active.liability-type { background: var(--expense); color: #fff; }
+.envelope-type-toggle { display: flex; background: var(--bg-input); border-radius: var(--radius-sm); padding: 3px; margin-bottom: 12px; }
+.envelope-type-btn { flex: 1; padding: 8px; border: none; background: none; border-radius: 8px; font-size: 13px; font-weight: 500; cursor: pointer; color: var(--text-secondary); font-family: inherit; }
+.envelope-type-btn.active.spending-type { background: var(--expense); color: #fff; }
+.envelope-type-btn.active.investing-type { background: var(--invest-color); color: #fff; }
+.invest-account-field { display: none; margin-top: 8px; }
+.invest-account-field.show { display: block; }
+.account-section-header { font-size: 12px; padding: 8px 0 4px; display: flex; align-items: center; gap: 4px; }
+@media(min-width:768px) { .page-content { padding: 0 24px 24px; } }
+</style>
+</head>
+<body>
+<div class="app-container">
+  <div class="page-content" id="pageContent">
+    <div class="page active" id="page-overview">
+      <div class="page-header">
+        <div>🍂 Miss Autumn<span class="subtitle" id="todayDate"></span></div>
+        <div style="font-size:20px;cursor:pointer" onclick="switchPage('settings')">⚙️</div>
+      </div>
+      <div class="card" style="background:linear-gradient(135deg,var(--primary),var(--primary-light));color:#fff">
+        <div class="card-title" style="color:rgba(255,255,255,0.7)">本月结余</div>
+        <div class="card-amount" id="monthSurplusDisplay" style="color:#fff">¥0.00</div>
+        <div style="display:flex;gap:16px;margin-top:12px">
+          <div><span style="font-size:12px;opacity:0.7">收入 </span><span id="ovMonthIncome" style="font-weight:600">¥0</span></div>
+          <div><span style="font-size:12px;opacity:0.7">消费 </span><span id="ovMonthSpending" style="font-weight:600">¥0</span></div>
+          <div><span style="font-size:12px;opacity:0.7">投资 </span><span id="ovMonthInvest" style="font-weight:600">¥0</span></div>
+        </div>
+      </div>
+      <div class="section-title">✉️ 信封预算</div>
+      <div id="envelopeSection"></div>
+      <div class="section-title">✉️ 信封余额</div>
+      <div class="account-chips" id="accountChips"></div>
+      <div class="stats-row-4">
+        <div class="stat-card"><div class="label">收入</div><div class="value income" id="ovStatIncome">¥0</div></div>
+        <div class="stat-card"><div class="label">消费</div><div class="value expense" id="ovStatSpending">¥0</div></div>
+        <div class="stat-card"><div class="label">投资</div><div class="value invest" id="ovStatInvest">¥0</div></div>
+        <div class="stat-card"><div class="label">结余</div><div class="value" id="ovStatSurplus">¥0</div></div>
+      </div>
+      <div class="stats-row">
+        <div class="stat-card"><div class="label">全口径支出</div><div class="value expense" id="ovTotalExpense">¥0</div></div>
+        <div class="stat-card"><div class="label">本月笔数</div><div class="value" id="ovMonthCount">0笔</div></div>
+      </div>
+      <div class="section-title">📋 最近记录 <span class="more" onclick="switchPage('stats')">查看全部</span></div>
+      <div class="tx-list" id="recentTx"></div>
+    </div>
+    <div class="page" id="page-record">
+      <div class="page-header"><div>✏️ 记账</div></div>
+      <div class="record-input-area">
+        <div class="type-toggle">
+          <button class="type-toggle-btn expense-type active" onclick="setRecordType('expense')">支出</button>
+          <button class="type-toggle-btn income-type" onclick="setRecordType('income')">收入</button>
+          <button class="type-toggle-btn transfer-type" onclick="setRecordType('transfer')">转账</button>
+        </div>
+        <div class="input-row">
+          <div class="input-wrapper">
+            <textarea id="recordInput" placeholder="说句话就能记账&#10;如：午餐花了35、工资到账8000"></textarea>
+            <div class="voice-indicator" id="voiceIndicator"><div class="voice-wave"><span></span><span></span><span></span><span></span><span></span></div><span>正在听...</span></div>
+          </div>
+          <button class="mic-btn" id="micBtn" onclick="toggleVoice()">🎙️</button>
+        </div>
+        <div class="quick-amounts">
+          <button class="quick-amt" onclick="quickAmount(5)">5</button>
+          <button class="quick-amt" onclick="quickAmount(10)">10</button>
+          <button class="quick-amt" onclick="quickAmount(20)">20</button>
+          <button class="quick-amt" onclick="quickAmount(50)">50</button>
+          <button class="quick-amt" onclick="quickAmount(100)">100</button>
+          <button class="quick-amt" onclick="quickAmount(200)">200</button>
+        </div>
+        <div class="parsed-result" id="parsedResult"></div>
+        <div class="selector-row" id="incomeSelectorRow" style="display:none">
+          <select id="incomeCategorySelect"></select>
+          <input type="date" id="incomeDate" style="flex:1;min-width:120px;padding:10px 12px;background:var(--bg-input);border:2px solid transparent;border-radius:var(--radius-sm);color:var(--text);font-size:14px;outline:none;font-family:inherit">
+        </div>
+        <div id="expenseSelectorRow">
+          <div class="selector-row">
+            <select id="expenseEnvelopeSelect"></select>
+            <select id="expenseCategorySelect"></select>
+          </div>
+          <div class="selector-row">
+            <select id="expenseAccountSelect"></select>
+            <input type="date" id="expenseDate" style="flex:1;min-width:120px;padding:10px 12px;background:var(--bg-input);border:2px solid transparent;border-radius:var(--radius-sm);color:var(--text);font-size:14px;outline:none;font-family:inherit">
+          </div>
+          <div class="invest-account-field" id="investAccountField">
+            <div class="field-group"><label>转入投资/储蓄账户</label><select id="investAccountSelect"></select></div>
+          </div>
+        </div>
+        <div class="transfer-fields" id="transferFields">
+          <div class="field-group"><label>还款目标</label><select id="toAccountSelect"></select></div>
+          <div class="field-group"><label>还款金额</label><input class="modal-input" id="transferAmountInput" type="number" placeholder="0"></div>
+          <div class="field-group"><label>日期</label><input type="date" id="transferDate" style="width:100%;padding:10px 14px;background:var(--bg-input);border:2px solid transparent;border-radius:var(--radius-sm);color:var(--text);font-size:14px;outline:none;font-family:inherit"></div>
+        </div>
+        <button class="submit-btn" onclick="submitRecord()">确认记账</button>
+      </div>
+      <div class="section-title">📋 今日记录</div>
+      <div class="tx-list" id="todayTx"></div>
+    </div>
+    <div class="page" id="page-stats">
+      <div class="page-header"><div>📊 统计</div></div>
+      <div class="period-tabs">
+        <button class="period-tab active" onclick="setStatPeriod('month',this)">本月</button>
+        <button class="period-tab" onclick="setStatPeriod('year',this)">今年</button>
+        <button class="period-tab" onclick="setStatPeriod('all',this)">全部</button>
+      </div>
+      <div class="stat-sub-tabs">
+        <button class="stat-sub-tab active" onclick="setStatSubTab('charts',this)">图表分析</button>
+        <button class="stat-sub-tab" onclick="setStatSubTab('budget',this)">预算分析</button>
+      </div>
+      <div id="statChartsSection">
+        <div class="stats-row-4">
+          <div class="stat-card"><div class="label">收入</div><div class="value income" id="statIncome">¥0</div></div>
+          <div class="stat-card"><div class="label">消费</div><div class="value expense" id="statSpending">¥0</div></div>
+          <div class="stat-card"><div class="label">投资</div><div class="value invest" id="statInvest">¥0</div></div>
+          <div class="stat-card"><div class="label">结余</div><div class="value" id="statSurplus">¥0</div></div>
+        </div>
+        <div class="chart-container"><div class="card-title">📉 消费分类占比</div><canvas id="expenseChart"></canvas></div>
+        <div class="chart-container"><div class="card-title">📈 收支趋势</div><canvas id="trendChart"></canvas></div>
+      </div>
+      <div id="statBudgetSection" style="display:none"></div>
+      <div class="section-title">📋 全部记录</div>
+      <div class="tx-list" id="allTx"></div>
+    </div>
+    <div class="page" id="page-wealth">
+      <div class="page-header"><div>💎 财富看板</div></div>
+      <div class="wealth-dim-tabs">
+        <button class="wealth-dim-tab active" onclick="setWealthDim('month',this)">月度</button>
+        <button class="wealth-dim-tab" onclick="setWealthDim('quarter',this)">季度</button>
+        <button class="wealth-dim-tab" onclick="setWealthDim('year',this)">年度</button>
+      </div>
+      <div class="wealth-hero" id="wealthHero"></div>
+      <div id="wealthCompareSection"></div>
+      <div class="chart-container"><div class="card-title">🥧 信封支出占比</div><canvas id="spendingInvestChart"></canvas></div>
+      <div class="chart-container"><div class="card-title">📈 净结余趋势</div><canvas id="netAssetTrendChart"></canvas></div>
+      <div class="chart-container"><div class="card-title">📊 财富增长</div><canvas id="wealthGrowthChart"></canvas></div>
+    </div>
+    <div class="page" id="page-settings">
+      <div class="page-header"><div>⚙️ 设置</div></div>
+      <div class="setting-group"><div class="setting-item" onclick="toggleTheme()"><div class="left"><span class="icon">🌙</span><span class="label">深色模式</span></div><div class="toggle" id="themeToggle"></div></div></div>
+      <div class="setting-group">
+        <div class="setting-group-title">信封管理</div>
+        <div style="padding:12px 20px 4px;display:flex;gap:12px">
+          <div style="flex:1"><div style="font-size:12px;color:var(--expense);margin-bottom:4px">消费信封预算</div><div id="spendingEnvelopeSummary" style="font-size:16px;font-weight:700;color:var(--expense)">¥0</div></div>
+          <div style="flex:1"><div style="font-size:12px;color:var(--invest-color);margin-bottom:4px">投资信封预算</div><div id="investingEnvelopeSummary" style="font-size:16px;font-weight:700;color:var(--invest-color)">¥0</div></div>
+        </div>
+        <div class="tag-list" id="envelopeList"></div>
+      </div>
+      <div class="setting-group">
+        <div class="setting-group-title">负债账户</div>
+        <div style="padding:12px 20px 4px">
+          <div style="font-size:12px;color:var(--expense);margin-bottom:4px">负债账户</div><div id="liabilityAccountsSummary" style="font-size:16px;font-weight:700;color:var(--expense)">¥0</div>
+        </div>
+        <div class="tag-list" id="accountList"></div>
+      </div>
+      <div class="setting-group"><div class="setting-group-title">支出分类</div><div class="tag-list" id="expenseCatList"></div></div>
+      <div class="setting-group"><div class="setting-group-title">收入分类</div><div class="tag-list" id="incomeCatList"></div></div>
+      <div class="setting-group">
+        <div class="setting-item" onclick="tryRecoverData()"><div class="left"><span class="icon">🔄</span><span class="label">数据恢复</span></div><div class="right"><span>从备份恢复</span></div></div>
+        <div class="setting-item" onclick="exportData()"><div class="left"><span class="icon">📤</span><span class="label">导出数据</span></div><div class="right"><span>JSON</span></div></div>
+        <div class="setting-item" onclick="document.getElementById('importFile').click()"><div class="left"><span class="icon">📥</span><span class="label">导入数据</span></div><div class="right"><span>JSON</span></div></div>
+        <input type="file" id="importFile" accept=".json" style="display:none" onchange="importData(event)">
+        <div class="setting-item" onclick="clearAllData()"><div class="left"><span class="icon">🗑️</span><span class="label">清空数据</span></div><div class="right" style="color:var(--expense)"><span>危险操作</span></div></div>
+      </div>
+      <div style="text-align:center;padding:20px;color:var(--text-tertiary);font-size:12px">Miss Autumn的记账本 v6.0 · 信封预算模型 · 数据仅存储在本地</div>
+    </div>
+  </div>
+  <div class="tab-bar">
+    <button class="tab-item active" onclick="switchPage('overview')"><span class="tab-icon">🏠</span><span class="tab-label">概览</span></button>
+    <button class="tab-item" onclick="switchPage('stats')"><span class="tab-icon">📊</span><span class="tab-label">统计</span></button>
+    <button class="tab-item record-tab" onclick="switchPage('record')"><span class="tab-icon">➕</span><span class="tab-label">记账</span></button>
+    <button class="tab-item" onclick="switchPage('wealth')"><span class="tab-icon">💎</span><span class="tab-label">财富</span></button>
+    <button class="tab-item" onclick="switchPage('settings')"><span class="tab-icon">⚙️</span><span class="tab-label">设置</span></button>
+  </div>
+</div>
+<div class="modal-overlay" id="modalOverlay" onclick="closeModal(event)"><div class="modal" id="modalContent" onclick="event.stopPropagation()"><div class="modal-title" id="modalTitle"></div><div id="modalBody"></div></div></div>
+<div class="toast" id="toast"></div>
+<script>
+const DEFAULT_ACCOUNTS = [
+  { id: 'cash', name: '现金', icon: '💵', type: 'asset', balance: 0 },
+  { id: 'bank', name: '储蓄卡余额', icon: '🏦', type: 'asset', balance: 0 },
+  { id: 'creditcard', name: '信用卡', icon: '💳', type: 'liability', balance: 0 },
+  { id: 'huabei', name: '花呗', icon: '🌸', type: 'liability', balance: 0 },
+  { id: 'meituan', name: '美团月付', icon: '🟡', type: 'liability', balance: 0 }
+];
+const DEFAULT_ENVELOPES = [
+  { id: 'fixed', name: '固定支出', type: 'spending', monthlyBudget: 0 },
+  { id: 'living', name: '生活费', type: 'spending', monthlyBudget: 0 },
+  { id: 'growth', name: '成长学习投资', type: 'spending', monthlyBudget: 0 },
+  { id: 'health', name: '健康自我投资', type: 'spending', monthlyBudget: 0 },
+  { id: 'finance', name: '理财投资', type: 'investing', monthlyBudget: 0 }
+];
+const DEFAULT_EXPENSE_CATS = [
+  { id: 'food', name: '餐饮', icon: '🍜' },{ id: 'transport', name: '交通', icon: '🚗' },
+  { id: 'shopping', name: '购物', icon: '🛍️' },{ id: 'fun', name: '娱乐', icon: '🎮' },
+  { id: 'housing', name: '居住', icon: '🏠' },{ id: 'medical', name: '医疗', icon: '🏥' },
+  { id: 'education', name: '教育', icon: '📚' },{ id: 'other_exp', name: '其他', icon: '📦' }
+];
+const DEFAULT_INCOME_CATS = [
+  { id: 'salary', name: '工资', icon: '💰' },{ id: 'bonus', name: '奖金', icon: '🎁' },
+  { id: 'invest', name: '投资收益', icon: '📈' },{ id: 'other_inc', name: '其他', icon: '💎' }
+];
+
+let state = {
+  accounts: JSON.parse(JSON.stringify(DEFAULT_ACCOUNTS)),
+  envelopes: JSON.parse(JSON.stringify(DEFAULT_ENVELOPES)),
+  expenseCategories: [...DEFAULT_EXPENSE_CATS],
+  incomeCategories: [...DEFAULT_INCOME_CATS],
+  transactions: [], theme: 'light', recordType: 'expense'
+};
+
+function loadState() {
+  try {
+    const saved = localStorage.getItem('zhizhang_data');
+    if (saved) {
+      const parsed = JSON.parse(saved);
+      // 安全：先备份原始数据到backup key
+      try { localStorage.setItem('zhizhang_data_backup', saved); } catch(e2) {}
+      state = { ...state, ...parsed };
+      // 确保 transactions 是数组
+      if (!Array.isArray(state.transactions)) state.transactions = [];
+      // 确保 envelopes 是数组
+      if (!state.envelopes || !Array.isArray(state.envelopes)) state.envelopes = JSON.parse(JSON.stringify(DEFAULT_ENVELOPES));
+      if (state.accounts) state.accounts.forEach(a => {
+        if (!a.type) a.type = 'asset';
+        if (a.balance === undefined) a.balance = 0;
+        delete a.monthlyBudget; delete a.usage;
+      });
+      // 清理：移除跑进accounts的信封数据（保留所有真实账户，只移除信封ID的）
+      const envIds = state.envelopes.map(e => e.id);
+      state.accounts = state.accounts.filter(a => !envIds.includes(a.id));
+      // 确保默认资产账户存在
+      DEFAULT_ACCOUNTS.filter(da => da.type === 'asset').forEach(da => {
+        if (!state.accounts.find(a => a.id === da.id)) state.accounts.push(JSON.parse(JSON.stringify(da)));
+      });
+      state.envelopes.forEach(e => { if (!e.type) e.type = 'spending'; if (e.monthlyBudget === undefined) e.monthlyBudget = 0; });
+      if (state.transactions) state.transactions.forEach(t => {
+        if (t.type === 'expense' && !t.envelope) t.envelope = 'living';
+        // 修正account字段中混入信封ID的旧数据
+        if (envIds.includes(t.account)) t.account = 'bank';
+        if (envIds.includes(t.toAccount)) t.toAccount = 'bank';
+        // 旧资产账户映射到新账户
+        if (['wechat','alipay','invest'].includes(t.account)) t.account = 'bank';
+        if (['wechat','alipay','invest'].includes(t.toAccount)) t.toAccount = 'bank';
+        if (t.investAccount && ['wechat','alipay','invest'].includes(t.investAccount)) t.investAccount = 'bank';
+      });
+      delete state.budgets;
+      // 只在数据确实有变化时才save，避免无意义覆盖
+      const currentData = JSON.stringify(state);
+      if (currentData !== saved) saveState();
+    }
+  } catch(e) { console.error('Load error:', e); }
+  // 数据恢复：如果当前数据为空，尝试从备份恢复
+  if (state.transactions.length === 0) {
+    try {
+      const backup = localStorage.getItem('zhizhang_data_backup');
+      if (backup) {
+        const bp = JSON.parse(backup);
+        if (bp.transactions && bp.transactions.length > 0) {
+          console.log('[数据恢复] 发现备份数据，含 ' + bp.transactions.length + ' 条记录');
+          state.transactions = bp.transactions;
+          // 恢复其他可能丢失的数据
+          if (bp.envelopes && bp.envelopes.length > 0 && (!state.envelopes || state.envelopes.length === 0)) state.envelopes = bp.envelopes;
+          if (bp.accounts && bp.accounts.length > 0 && (!state.accounts || state.accounts.length <= 2)) state.accounts = bp.accounts;
+          saveState();
+          console.log('[数据恢复] 已从备份恢复');
+        }
+      }
+    } catch(e2) { console.error('Backup restore error:', e2); }
+  }
+}
+function saveState() { try { const d = JSON.stringify(state); const prev = localStorage.getItem('zhizhang_data'); if (prev && prev !== d) localStorage.setItem('zhizhang_data_backup', prev); localStorage.setItem('zhizhang_data', d); } catch(e) { console.error('Save error:', e); } }
+
+function getAccountBalance(acc) {
+  let bal = acc.balance || 0;
+  const sign = acc.type === 'liability' ? -1 : 1;
+  state.transactions.forEach(t => {
+    if (t.type === 'income' && t.account === acc.id) bal += sign * t.amount;
+    if (t.type === 'expense' && t.account === acc.id) bal -= sign * t.amount;
+    if (t.type === 'transfer' && t.account === acc.id) bal -= sign * t.amount;
+    if (t.type === 'transfer' && t.toAccount === acc.id) bal += sign * t.amount;
+    if (t.type === 'expense' && t.investAccount === acc.id) bal += sign * t.amount;
+  });
+  return bal;
+}
+
+function getNetAssets() {
+  let totalAssets = 0, totalLiability = 0;
+  state.accounts.forEach(a => { const bal = getAccountBalance(a); if (a.type === 'liability') totalLiability += Math.max(0, bal); else totalAssets += bal; });
+  return { totalAssets, totalLiability, net: totalAssets - totalLiability };
+}
+
+function getEnvelopeInfo(envId) { return state.envelopes.find(e => e.id === envId) || { id: envId, name: '未知', type: 'spending', monthlyBudget: 0 }; }
+function getEnvelopeMonthUsed(env) {
+  const ms = getMonthStart();
+  return state.transactions.filter(t => t.date >= ms && t.type === 'expense' && t.envelope === env.id).reduce((s,t) => s + t.amount, 0);
+}
+function getEnvelopeBalance(env) {
+  const budget = env.monthlyBudget || 0;
+  const envTx = state.transactions.filter(t => t.envelope === env.id && t.type === 'expense');
+  if (budget <= 0 && envTx.length === 0) return 0;
+  const now = new Date();
+  const curMonth = `${now.getFullYear()}-${String(now.getMonth()+1).padStart(2,'0')}`;
+  let startMonth;
+  if (envTx.length > 0) {
+    const dates = envTx.map(t => t.date).sort();
+    startMonth = dates[0].substring(0, 7);
+  } else { startMonth = curMonth; }
+  if (startMonth > curMonth) startMonth = curMonth;
+  const [sy, sm] = startMonth.split('-').map(Number);
+  const [cy, cm] = curMonth.split('-').map(Number);
+  const numMonths = (cy - sy) * 12 + (cm - sm) + 1;
+  return budget * numMonths - envTx.reduce((s, t) => s + t.amount, 0);
+}
+function getMonthStart() { const n = new Date(); return `${n.getFullYear()}-${String(n.getMonth()+1).padStart(2,'0')}-01`; }
+function getMonthSpending(txs) { return txs.filter(t => t.type === 'expense' && getEnvelopeInfo(t.envelope).type === 'spending').reduce((s,t) => s + t.amount, 0); }
+function getMonthInvest(txs) { return txs.filter(t => t.type === 'expense' && getEnvelopeInfo(t.envelope).type === 'investing').reduce((s,t) => s + t.amount, 0); }
+function getBudgetBarClass(actual, budget) { if (budget <= 0) return 'safe'; const r = actual / budget; if (r >= 1) return 'over'; if (r >= 0.9) return 'danger'; if (r >= 0.7) return 'warn'; return 'safe'; }
+
+function getEnvelopeColor(env) {
+  const spendingColors = { fixed: '#e17055', living: '#fdcb6e', growth: '#e77f67', health: '#f8a5c2' };
+  const investingColors = { finance: '#6c5ce7' };
+  const extraSpending = ['#fab1a0','#ffeaa7','#ff7979','#ffcccc','#e55039','#f6b93b'];
+  const extraInvesting = ['#a29bfe','#74b9ff','#0984e3','#81ecec','#6c5ce7','#b8e994'];
+  if (env.type === 'spending') {
+    if (spendingColors[env.id]) return spendingColors[env.id];
+    const seIdx = state.envelopes.filter(e => e.type === 'spending' && !spendingColors[e.id]).indexOf(env);
+    return extraSpending[seIdx % extraSpending.length] || '#e17055';
+  } else {
+    if (investingColors[env.id]) return investingColors[env.id];
+    const ieIdx = state.envelopes.filter(e => e.type === 'investing' && !investingColors[e.id]).indexOf(env);
+    return extraInvesting[ieIdx % extraInvesting.length] || '#6c5ce7';
+  }
+}
+function getEnvelopeIcon(env) {
+  const icons = { fixed: '🏠', living: '🍜', growth: '📚', health: '💊', finance: '📈' };
+  return icons[env.id] || (env.type === 'investing' ? '📈' : '🛒');
+}
+
+// ==================== NLP Parser ====================
+function parseInput(text) {
+  text = text.trim(); if (!text) return null;
+  let amount = null, type = state.recordType, category = null, envelope = null, account = null, note = text, date = null;
+  let parsedDate = null; const today = new Date();
+  let m = text.match(/(\d{4})[年/\-](\d{1,2})[月/\-](\d{1,2})[日号]?/);
+  if (m) { parsedDate = new Date(parseInt(m[1]), parseInt(m[2])-1, parseInt(m[3])); text = text.replace(m[0], ''); }
+  if (!parsedDate) { m = text.match(/(\d{1,2})[月/\-](\d{1,2})[日号]?/); if (m) { parsedDate = new Date(today.getFullYear(), parseInt(m[1])-1, parseInt(m[2])); text = text.replace(m[0], ''); } }
+  if (!parsedDate && text.match(/前天/)) { parsedDate = new Date(today); parsedDate.setDate(parsedDate.getDate()-2); text = text.replace('前天',''); }
+  if (!parsedDate && text.match(/昨天/)) { parsedDate = new Date(today); parsedDate.setDate(parsedDate.getDate()-1); text = text.replace('昨天',''); }
+  if (parsedDate) date = parsedDate.toISOString().split('T')[0];
+  // 识别信封名
+  for (const env of state.envelopes) { if (text.includes(env.name)) { envelope = env.id; text = text.replace(env.name, ''); break; } }
+  // 识别账户名（资产+负债）
+  for (const acc of state.accounts) { if (text.includes(acc.name)) { account = acc.id; text = text.replace(acc.name, ''); break; } }
+  // 识别账户关键词
+  if (!account) {
+    const accKw = { cash: ['现金'], bank: ['储蓄卡','银行卡','工资卡'], creditcard: ['信用卡'], huabei: ['花呗'], meituan: ['美团月付','美团'] };
+    for (const [aid, kws] of Object.entries(accKw)) { for (const kw of kws) { if (text.includes(kw)) { account = aid; text = text.replace(kw, ''); break; } } if (account) break; }
+    // 也匹配用户自定义账户
+    for (const acc of state.accounts) { if (acc.id.startsWith('acc_') && text.includes(acc.name)) { account = acc.id; text = text.replace(acc.name, ''); break; } }
+  }
+  for (const kw of ['转账','转到','转出','转入','汇款']) { if (text.includes(kw)) { type = 'transfer'; break; } }
+  if (type !== 'transfer') { for (const kw of ['收入','到账','工资','奖金','收到','入账','赚了','还款','报销','分红','利息','提成','兼职']) { if (text.includes(kw)) { type = 'income'; break; } } }
+  if (type !== 'transfer' && type !== 'income') { for (const kw of ['花了','花费','消费','支出','付了','买了','花','买','充值','缴费','交了']) { if (text.includes(kw)) { type = 'expense'; break; } } }
+  // 支持算术表达式：先尝试匹配带运算符的表达式（如 9+10, 100-20+5, 3*15）
+  const exprMatch = text.match(/([\d.]+\s*[+\-*×]\s*[\d.]+\s*(?:[+\-*×]\s*[\d.]+\s*)*)/);
+  if (exprMatch) {
+    try {
+      const expr = exprMatch[1].replace(/×/g, '*');
+      const result = Function('"use strict"; return (' + expr + ')')();
+      if (typeof result === 'number' && isFinite(result) && result > 0) {
+        amount = result; text = text.replace(exprMatch[0], '');
+      }
+    } catch(e) {}
+  }
+  // 如果没匹配到表达式，走原来的单个数字匹配
+  if (amount === null) {
+    m = text.match(/(\d+\.?\d*)\s*万/); if (m) { amount = parseFloat(m[1]) * 10000; text = text.replace(m[0], ''); }
+    else { m = text.match(/(\d+\.?\d*)\s*[块元]/); if (m) { amount = parseFloat(m[1]); text = text.replace(m[0], ''); } else { m = text.match(/(\d+\.?\d+)/); if (m) { amount = parseFloat(m[1]); text = text.replace(m[0], ''); } } }
+  }
+  if (amount === null) return null;
+  if (type !== 'transfer') {
+    const ckw = { expense: { food: ['午餐','晚餐','早餐','外卖','火锅','奶茶','咖啡','零食','水果','饭','餐','食堂','小吃','面'], transport: ['打车','地铁','公交','出租','滴滴','高铁','火车','飞机','油费','停车'], shopping: ['买衣服','买鞋','化妆品','护肤','日用品','超市','淘宝','网购','数码','手机'], fun: ['电影','游戏','KTV','旅游','门票','健身','会员','VIP'], housing: ['房租','水电','物业','宽带','话费','燃气'], medical: ['看病','医院','药','体检','挂号'], education: ['学费','书','课程','培训','考试','网课'], other_exp: ['红包','礼物','捐赠','宠物','理发','快递'] }, income: { salary: ['工资','月薪'], bonus: ['奖金','年终','提成','绩效','补贴'], invest: ['利息','分红','收益','理财','股票','基金'], other_inc: ['报销','退款','红包','兼职'] } };
+    const cats = ckw[type]; if (cats) { for (const [cId, kws] of Object.entries(cats)) { for (const kw of kws) { if (text.includes(kw)) { category = cId; break; } } if (category) break; } }
+  }
+  note = text.replace(/[，。！？、的了在从到给用向被把和与及]/g, '').trim();
+  if (!note) { if (type === 'transfer') note = '转账'; else { const cl = type === 'expense' ? state.expenseCategories : state.incomeCategories; const f = cl.find(c => c.id === category); note = f ? f.name : (type === 'expense' ? '支出' : '收入'); } }
+  return { amount: Math.abs(amount), type, category, envelope, account, note, date: date || new Date().toISOString().split('T')[0] };
+}
+
+// ==================== UI ====================
+let currentPage = 'overview', currentStatPeriod = 'month', currentStatSubTab = 'charts', currentWealthDim = 'month';
+let isRecording = false, recognition = null;
+let expenseChart = null, trendChart = null, netAssetTrendChart = null, wealthGrowthChart = null, spendingInvestChart = null;
+
+function switchPage(page) {
+  currentPage = page;
+  document.querySelectorAll('.page').forEach(p => p.classList.remove('active'));
+  document.getElementById('page-' + page).classList.add('active');
+  document.querySelectorAll('.tab-item').forEach(t => t.classList.remove('active'));
+  document.querySelectorAll('.tab-item')[{ overview: 0, stats: 1, record: 2, wealth: 3, settings: 4 }[page]].classList.add('active');
+  if (page === 'overview') renderOverview(); if (page === 'record') renderRecordPage(); if (page === 'stats') renderStats(); if (page === 'wealth') renderWealth(); if (page === 'settings') renderSettings();
+}
+function showToast(msg) { const t = document.getElementById('toast'); t.textContent = msg; t.classList.add('show'); setTimeout(() => t.classList.remove('show'), 2500); }
+function formatMoney(n) { return '¥' + Math.abs(n).toFixed(2).replace(/\B(?=(\d{3})+(?!\d))/g, ','); }
+function formatDate(ds) { const d = new Date(ds), t = new Date(); if (ds === t.toISOString().split('T')[0]) return '今天'; const y = new Date(t); y.setDate(y.getDate()-1); if (ds === y.toISOString().split('T')[0]) return '昨天'; return `${d.getMonth()+1}月${d.getDate()}日`; }
+function getCatInfo(catId, type) { const cats = type === 'expense' ? state.expenseCategories : state.incomeCategories; return cats.find(c => c.id === catId) || { id: catId, name: '其他', icon: type === 'expense' ? '📦' : '💎' }; }
+function getAccountInfo(accId) { return state.accounts.find(a => a.id === accId) || { id: accId, name: '未知', icon: '❓', type: 'asset' }; }
+
+// ==================== Overview ====================
+function renderOverview() {
+  const today = new Date();
+  document.getElementById('todayDate').textContent = ` · ${today.getMonth()+1}月${today.getDate()}日`;
+  const ms = getMonthStart(), mtx = state.transactions.filter(t => t.date >= ms);
+  const inc = mtx.filter(t => t.type === 'income').reduce((s,t) => s + t.amount, 0);
+  const spd = getMonthSpending(mtx), inv = getMonthInvest(mtx), sur = inc - spd - inv;
+  document.getElementById('monthSurplusDisplay').textContent = (sur < 0 ? '-' : '') + formatMoney(Math.abs(sur));
+  document.getElementById('ovMonthIncome').textContent = formatMoney(inc);
+  document.getElementById('ovMonthSpending').textContent = formatMoney(spd);
+  document.getElementById('ovMonthInvest').textContent = formatMoney(inv);
+  document.getElementById('ovStatIncome').textContent = formatMoney(inc);
+  document.getElementById('ovStatSpending').textContent = formatMoney(spd);
+  document.getElementById('ovStatInvest').textContent = formatMoney(inv);
+  const se = document.getElementById('ovStatSurplus'); se.textContent = (sur >= 0 ? '+' : '-') + formatMoney(Math.abs(sur)); se.className = 'value ' + (sur >= 0 ? 'net-positive' : 'net-negative');
+  document.getElementById('ovTotalExpense').textContent = formatMoney(mtx.filter(t => t.type === 'expense').reduce((s,t) => s + t.amount, 0));
+  document.getElementById('ovMonthCount').textContent = mtx.length + '笔';
+  renderEnvelopeSection();
+  const chipsEl = document.getElementById('accountChips'); let ch = '';
+  state.envelopes.forEach(e => { const bal = getEnvelopeBalance(e); const isInv = e.type === 'investing'; const bd = (bal >= 0 ? '' : '-') + formatMoney(Math.abs(bal)); const bc = bal >= 0 ? (isInv ? 'net-positive' : 'net-positive') : 'net-negative'; const badge = isInv ? '<span class="type-badge investing-badge">投资</span>' : '<span class="type-badge spending-badge">消费</span>'; const icon = isInv ? '📈' : '🛒'; ch += `<div class="account-chip" onclick="editEnvelope('${e.id}')"><div class="name">${icon} ${e.name}</div><div class="balance ${bc}">${bd}</div>${badge}</div>`; });
+  chipsEl.innerHTML = ch;
+  const recent = [...state.transactions].sort((a,b) => b.date !== a.date ? b.date.localeCompare(a.date) : (b.createdAt||0) - (a.createdAt||0)).slice(0, 10);
+  renderTxList('recentTx', recent);
+}
+
+function renderEnvelopeSection() {
+  const c = document.getElementById('envelopeSection');
+  const se = state.envelopes.filter(e => e.type === 'spending'), ie = state.envelopes.filter(e => e.type === 'investing');
+  let h = '';
+  if (se.length) { h += '<div class="budget-progress-section"><div class="budget-header"><span class="title">🛒 消费信封</span></div>'; se.forEach(e => { const b = e.monthlyBudget || 0, u = getEnvelopeMonthUsed(e), r = b - u, p = b > 0 ? Math.min((u/b)*100,100) : 0, bc = getBudgetBarClass(u,b); h += `<div class="budget-cat-item"><div class="cat-header"><span class="cat-name"><span class="envelope-badge spending-badge">消费</span> ${e.name}</span><span class="cat-amounts ${r<0?'over':''}">${formatMoney(u)} / ${formatMoney(b)}</span></div><div class="budget-bar-bg"><div class="budget-bar-fill ${bc}" style="width:${p}%"></div></div><div class="budget-labels"><span>已用 ${formatMoney(u)}</span><span>${r>=0?'剩余 '+formatMoney(r):'超支 '+formatMoney(Math.abs(r))}</span></div></div>`; }); h += '</div>'; }
+  if (ie.length) { h += '<div class="budget-progress-section"><div class="budget-header"><span class="title">📈 投资信封</span></div>'; ie.forEach(e => { const b = e.monthlyBudget || 0, u = getEnvelopeMonthUsed(e), r = b - u, p = b > 0 ? Math.min((u/b)*100,100) : 0; let bc; if (b<=0) bc='invest-safe'; else if (u/b>=1) bc='invest-over'; else if (u/b>=0.9) bc='warn'; else bc='invest-safe'; h += `<div class="budget-cat-item"><div class="cat-header"><span class="cat-name"><span class="envelope-badge investing-badge">投资</span> ${e.name}</span><span class="cat-amounts">${formatMoney(u)} / ${formatMoney(b)}</span></div><div class="budget-bar-bg"><div class="budget-bar-fill ${bc}" style="width:${p}%"></div></div><div class="budget-labels"><span>已投 ${formatMoney(u)}</span><span>${r>=0?'剩余 '+formatMoney(r):'超额 '+formatMoney(Math.abs(r))}</span></div></div>`; }); h += '</div>'; }
+  c.innerHTML = h;
+}
+
+function renderTxList(cid, txList) {
+  const c = document.getElementById(cid);
+  if (!txList.length) { c.innerHTML = '<div class="empty-state"><div class="emoji">📝</div><div class="text">暂无记录</div></div>'; return; }
+  const g = {}; txList.forEach(t => { if (!g[t.date]) g[t.date] = []; g[t.date].push(t); });
+  let h = '';
+  for (const [date, items] of Object.entries(g)) {
+    h += `<div class="tx-date-group"><div class="tx-date">${formatDate(date)}</div>`;
+    items.forEach(t => {
+      if (t.type === 'transfer') { const ta = getAccountInfo(t.toAccount); h += `<div class="tx-item" onclick="showTxActions('${t.id}')"><div class="tx-icon transfer">🔄</div><div class="tx-info"><div class="category">${t.note||'还款'}</div><div class="account-tag">还款 → ${ta.icon} ${ta.name}</div></div><div class="tx-amount transfer">${formatMoney(t.amount)}</div></div>`; }
+      else if (t.type === 'income') { const cat = getCatInfo(t.category,'income'); h += `<div class="tx-item" onclick="showTxActions('${t.id}')"><div class="tx-icon income">${cat.icon}</div><div class="tx-info"><div class="category">${cat.name}</div><div class="note">${t.note||''}</div></div><div class="tx-amount income">+${formatMoney(t.amount)}</div></div>`; }
+      else { const cat = getCatInfo(t.category,'expense'), acc = getAccountInfo(t.account), env = getEnvelopeInfo(t.envelope), isInv = env.type === 'investing'; h += `<div class="tx-item" onclick="showTxActions('${t.id}')"><div class="tx-icon ${isInv?'invest':'expense'}">${cat.icon}</div><div class="tx-info"><div class="category">${cat.name} <span style="font-size:11px;color:${isInv?'var(--invest-color)':'var(--expense)'}">[${isInv?'投资':'消费'}]</span></div><div class="note">${t.note||''}</div><div class="account-tag">${acc.icon} ${acc.name} · ✉️${env.name}</div></div><div class="tx-amount ${isInv?'invest':'expense'}">-${formatMoney(t.amount)}</div></div>`; }
+    });
+    h += '</div>';
+  }
+  c.innerHTML = h;
+}
+function showTxActions(id) {
+  const tx = state.transactions.find(t => t.id === id); if (!tx) return;
+  const cat = tx.type === 'income' ? getCatInfo(tx.category,'income') : getCatInfo(tx.category,'expense');
+  const env = tx.envelope ? getEnvelopeInfo(tx.envelope) : null;
+  const isInv = env && env.type === 'investing';
+  let detail = `${cat.icon} ${cat.name}`;
+  if (tx.type === 'expense') { const acc = getAccountInfo(tx.account); detail += ` · ${acc.icon} ${acc.name} · ✉️${env.name}`; }
+  if (tx.type === 'transfer') { const ta = getAccountInfo(tx.toAccount); detail = `还款 → ${ta.icon} ${ta.name}`; }
+  if (tx.note) detail += ` · ${tx.note}`;
+  document.getElementById('modalTitle').textContent = '记录操作';
+  let html = `<div style="background:var(--bg-input);border-radius:var(--radius-sm);padding:16px;margin-bottom:16px">
+    <div style="font-size:18px;font-weight:700;margin-bottom:8px">${tx.type==='income'?'+':(tx.type==='transfer'?'':'-')}${formatMoney(tx.amount)}</div>
+    <div style="font-size:13px;color:var(--text-secondary)">${detail}</div>
+    <div style="font-size:12px;color:var(--text-tertiary);margin-top:4px">${tx.date}</div>
+  </div>`;
+  html += `<button class="modal-btn primary" onclick="editTx('${id}')" style="margin-bottom:8px">✏️ 编辑</button>`;
+  html += `<button class="modal-btn danger" onclick="deleteTx('${id}');closeModalDirect()">🗑️ 删除</button>`;
+  html += `<button class="modal-btn secondary" onclick="closeModalDirect()" style="margin-top:8px">取消</button>`;
+  document.getElementById('modalBody').innerHTML = html;
+  document.getElementById('modalOverlay').classList.add('show');
+}
+function deleteTx(id) { state.transactions = state.transactions.filter(t => t.id !== id); saveState(); showToast('已删除'); refreshCurrentPage(); }
+
+function editTx(id) {
+  const tx = state.transactions.find(t => t.id === id); if (!tx) return;
+  document.getElementById('modalTitle').textContent = '编辑记录';
+  const aa = state.accounts.filter(a => a.type === 'asset'), la = state.accounts.filter(a => a.type === 'liability');
+  const allAccOpts = [...aa.map(a => `<option value="${a.id}">${a.icon} ${a.name}</option>`), ...la.map(a => `<option value="${a.id}">${a.icon} ${a.name} [负债]</option>`)].join('');
+  const assetAccOpts = aa.map(a => `<option value="${a.id}">${a.icon} ${a.name}</option>`).join('');
+  const envOpts = state.envelopes.map(e => `<option value="${e.id}">${e.type==='investing'?'📈':'🛒'} ${e.name}</option>`).join('');
+  const expCatOpts = state.expenseCategories.map(c => `<option value="${c.id}">${c.icon} ${c.name}</option>`).join('');
+  const incCatOpts = state.incomeCategories.map(c => `<option value="${c.id}">${c.icon} ${c.name}</option>`).join('');
+
+  let html = '';
+  if (tx.type === 'expense') {
+    html += `<div class="field-group"><label>金额</label><input class="modal-input" id="editAmount" type="number" value="${tx.amount}" placeholder="0"></div>`;
+    html += `<div class="field-group"><label>分类</label><select class="modal-input" id="editCategory">${expCatOpts}</select></div>`;
+    html += `<div class="field-group"><label>信封</label><select class="modal-input" id="editEnvelope">${envOpts}</select></div>`;
+    html += `<div class="field-group"><label>支付账户</label><select class="modal-input" id="editAccount">${allAccOpts}</select></div>`;
+    const env = getEnvelopeInfo(tx.envelope);
+    if (env.type === 'investing') {
+      html += `<div class="field-group"><label>转入投资账户</label><select class="modal-input" id="editInvestAccount">${assetAccOpts}</select></div>`;
+    }
+  } else if (tx.type === 'income') {
+    html += `<div class="field-group"><label>金额</label><input class="modal-input" id="editAmount" type="number" value="${tx.amount}" placeholder="0"></div>`;
+    html += `<div class="field-group"><label>分类</label><select class="modal-input" id="editCategory">${incCatOpts}</select></div>`;
+  } else {
+    html += `<div class="field-group"><label>还款金额</label><input class="modal-input" id="editAmount" type="number" value="${tx.amount}" placeholder="0"></div>`;
+    html += `<div class="field-group"><label>还款目标</label><select class="modal-input" id="editToAccount">${la.map(a => `<option value="${a.id}">${a.icon} ${a.name}</option>`).join('')}</select></div>`;
+  }
+  html += `<div class="field-group"><label>备注</label><input class="modal-input" id="editNote" value="${tx.note||''}" placeholder="备注"></div>`;
+  html += `<div class="field-group"><label>日期</label><input class="modal-input" id="editDate" type="date" value="${tx.date}"></div>`;
+  html += `<button class="modal-btn primary" onclick="saveEditTx('${id}')">保存</button>`;
+  html += `<button class="modal-btn secondary" onclick="closeModalDirect()">取消</button>`;
+  document.getElementById('modalBody').innerHTML = html;
+
+  // set selected values
+  setTimeout(() => {
+    const sCat = document.getElementById('editCategory'); if (sCat && tx.category) sCat.value = tx.category;
+    const sEnv = document.getElementById('editEnvelope'); if (sEnv && tx.envelope) sEnv.value = tx.envelope;
+    const sAcc = document.getElementById('editAccount'); if (sAcc && tx.account) sAcc.value = tx.account;
+    const sToAcc = document.getElementById('editToAccount'); if (sToAcc && tx.toAccount) sToAcc.value = tx.toAccount;
+    const sInv = document.getElementById('editInvestAccount'); if (sInv && tx.investAccount) sInv.value = tx.investAccount;
+  }, 0);
+}
+
+function saveEditTx(id) {
+  const tx = state.transactions.find(t => t.id === id); if (!tx) return;
+  const amtEl = document.getElementById('editAmount');
+  const amt = amtEl ? parseFloat(amtEl.value) : tx.amount;
+  if (!amt || amt <= 0) { showToast('请输入有效金额'); return; }
+  tx.amount = amt;
+  const catEl = document.getElementById('editCategory'); if (catEl) tx.category = catEl.value;
+  const envEl = document.getElementById('editEnvelope'); if (envEl) tx.envelope = envEl.value;
+  const accEl = document.getElementById('editAccount'); if (accEl) tx.account = accEl.value;
+  const toAccEl = document.getElementById('editToAccount'); if (toAccEl) tx.toAccount = toAccEl.value;
+  const invAccEl = document.getElementById('editInvestAccount'); if (invAccEl) tx.investAccount = invAccEl.value;
+  const noteEl = document.getElementById('editNote'); if (noteEl) tx.note = noteEl.value;
+  const dateEl = document.getElementById('editDate'); if (dateEl && dateEl.value) tx.date = dateEl.value;
+  saveState(); closeModalDirect(); showToast('已修改'); refreshCurrentPage();
+}
+
+// ==================== Record ====================
+function renderRecordPage() {
+  const aa = state.accounts.filter(a => a.type === 'asset'), la = state.accounts.filter(a => a.type === 'liability');
+  const assetOpts = aa.map(a => `<option value="${a.id}">${a.icon} ${a.name}</option>`).join('');
+  const liabOpts = la.map(a => `<option value="${a.id}">${a.icon} ${a.name} [负债]</option>`).join('');
+  const payOpts = assetOpts + liabOpts;
+  const eas = document.getElementById('expenseAccountSelect'); eas.innerHTML = '<option value="" disabled>支付账户</option>' + payOpts; if (aa.length) eas.value = aa[0].id;
+  document.getElementById('expenseEnvelopeSelect').innerHTML = state.envelopes.map(e => `<option value="${e.id}">${e.type==='investing'?'📈':'🛒'} ${e.name} [${e.type==='investing'?'投资':'消费'}]</option>`).join('');
+  document.getElementById('investAccountSelect').innerHTML = assetOpts;
+  if (aa.length) document.getElementById('investAccountSelect').value = aa[0].id;
+
+  document.getElementById('toAccountSelect').innerHTML = '<option value="" disabled>还款目标</option>' + liabOpts;
+  if (la.length) document.getElementById('toAccountSelect').value = la[0].id;
+  updateCategorySelects();
+  const ts = new Date().toISOString().split('T')[0]; document.getElementById('incomeDate').value = ts; document.getElementById('expenseDate').value = ts; document.getElementById('transferDate').value = ts;
+  updateRecordTypeUI(); updateInvestAccountField();
+  renderTxList('todayTx', state.transactions.filter(t => t.date === ts).sort((a,b) => (b.createdAt||0)-(a.createdAt||0)));
+}
+function updateCategorySelects() { document.getElementById('incomeCategorySelect').innerHTML = state.incomeCategories.map(c => `<option value="${c.id}">${c.icon} ${c.name}</option>`).join(''); document.getElementById('expenseCategorySelect').innerHTML = state.expenseCategories.map(c => `<option value="${c.id}">${c.icon} ${c.name}</option>`).join(''); }
+function updateRecordTypeUI() { const it = state.recordType === 'transfer', ii = state.recordType === 'income'; document.getElementById('incomeSelectorRow').style.display = (ii && !it) ? 'flex' : 'none'; document.getElementById('expenseSelectorRow').style.display = (state.recordType === 'expense' && !it) ? 'block' : 'none'; const tf = document.getElementById('transferFields'); if (it) tf.classList.add('show'); else tf.classList.remove('show'); }
+function updateInvestAccountField() { const eid = document.getElementById('expenseEnvelopeSelect').value, env = getEnvelopeInfo(eid), f = document.getElementById('investAccountField'); if (env.type === 'investing') f.classList.add('show'); else f.classList.remove('show'); }
+function setRecordType(type) { state.recordType = type; document.querySelectorAll('.type-toggle-btn').forEach(b => b.classList.remove('active')); document.querySelector(`.type-toggle-btn.${type}-type`).classList.add('active'); updateCategorySelects(); updateRecordTypeUI(); }
+function quickAmount(n) { const i = document.getElementById('recordInput'); i.value = (i.value || '') + n; i.focus(); }
+function handleInputChange() { const text = document.getElementById('recordInput').value, r = parseInput(text), el = document.getElementById('parsedResult'); if (r) { const tl = r.type === 'transfer' ? '转账' : (r.type === 'income' ? '收入' : '支出'); if (r.type === 'transfer') { el.innerHTML = `<div class="parsed-row"><span class="label">类型</span><span class="value transfer">转账</span></div><div class="parsed-row"><span class="label">金额</span><span class="value transfer">${formatMoney(r.amount)}</span></div><div class="parsed-row"><span class="label">备注</span><span class="value">${r.note}</span></div>`; } else { const cat = getCatInfo(r.category, r.type); const envInfo = r.envelope ? getEnvelopeInfo(r.envelope) : null; const accInfo = r.account ? getAccountInfo(r.account) : null; let html = `<div class="parsed-row"><span class="label">类型</span><span class="value ${r.type}">${tl}</span></div><div class="parsed-row"><span class="label">金额</span><span class="value ${r.type}">${formatMoney(r.amount)}</span></div><div class="parsed-row"><span class="label">分类</span><span class="value">${cat.icon} ${cat.name}</span></div>`; if (envInfo) html += `<div class="parsed-row"><span class="label">信封</span><span class="value">✉️${envInfo.name}</span></div>`; if (accInfo) html += `<div class="parsed-row"><span class="label">账户</span><span class="value">${accInfo.icon} ${accInfo.name}</span></div>`; html += `<div class="parsed-row"><span class="label">备注</span><span class="value">${r.note}</span></div>`; el.innerHTML = html; } el.classList.add('show'); } else { el.classList.remove('show'); } }
+
+function submitRecord() {
+  const text = document.getElementById('recordInput').value.trim();
+  if (state.recordType === 'transfer') { const ta = document.getElementById('toAccountSelect').value, dt = document.getElementById('transferDate').value; const amtInput = document.getElementById('transferAmountInput'); let amt = amtInput ? parseFloat(amtInput.value) : null; const m = text.match(/(\d+\.?\d*)/); if (!amt && m) amt = parseFloat(m[1]); if (!amt || amt <= 0) { showToast('请输入还款金额'); return; } if (!ta) { showToast('请选择还款目标'); return; } state.transactions.push({ id: 'tx_' + Date.now() + '_' + Math.random().toString(36).substr(2,5), type: 'transfer', amount: amt, account: 'bank', toAccount: ta, category: 'transfer', note: text.replace(/(\d+\.?\d*)/, '').replace(/[，。！？、元块]/g, '').trim() || '还款', date: dt || new Date().toISOString().split('T')[0], createdAt: Date.now() }); saveState(); showToast(`已记录：还款 ${formatMoney(amt)}`); document.getElementById('recordInput').value = ''; document.getElementById('parsedResult').classList.remove('show'); renderRecordPage(); return; }
+  if (state.recordType === 'income') { if (!text) { showToast('请输入记账内容'); return; } const r = parseInput(text); if (!r) { showToast('未能识别金额'); return; } const cid = document.getElementById('incomeCategorySelect').value, dt = document.getElementById('incomeDate').value || r.date; state.transactions.push({ id: 'tx_' + Date.now() + '_' + Math.random().toString(36).substr(2,5), type: 'income', amount: r.amount, category: cid || r.category, account: 'income', note: r.note, date: dt, createdAt: Date.now() }); saveState(); showToast(`已记录：收入 ${formatMoney(r.amount)}`); document.getElementById('recordInput').value = ''; document.getElementById('parsedResult').classList.remove('show'); renderRecordPage(); return; }
+  if (!text) { showToast('请输入记账内容'); return; } const r = parseInput(text); if (!r) { showToast('未能识别金额'); return; }
+  // 自动选中解析出的信封和账户
+  if (r.envelope) { const es = document.getElementById('expenseEnvelopeSelect'); if (es) es.value = r.envelope; updateInvestAccountField(); }
+  if (r.account) { const as = document.getElementById('expenseAccountSelect'); if (as) as.value = r.account; }
+  const aid = document.getElementById('expenseAccountSelect').value, eid = document.getElementById('expenseEnvelopeSelect').value, cid = document.getElementById('expenseCategorySelect').value, dt = document.getElementById('expenseDate').value || r.date;
+  if (!aid) { showToast('请选择支付账户'); return; } if (!eid) { showToast('请选择信封'); return; }
+  const env = getEnvelopeInfo(eid), tx = { id: 'tx_' + Date.now() + '_' + Math.random().toString(36).substr(2,5), type: 'expense', amount: r.amount, category: cid || r.category, envelope: eid, account: aid, note: r.note, date: dt, createdAt: Date.now() };
+  if (env.type === 'investing') { const iaid = document.getElementById('investAccountSelect').value; if (!iaid) { showToast('请选择转入投资账户'); return; } tx.investAccount = iaid; }
+  state.transactions.push(tx); saveState(); showToast(`已记录：${env.type==='investing'?'投资':'消费'} ${formatMoney(r.amount)}`); document.getElementById('recordInput').value = ''; document.getElementById('parsedResult').classList.remove('show'); renderRecordPage();
+}
+
+// Voice
+function toggleVoice() { if (isRecording) { if (recognition) { recognition.stop(); recognition = null; } isRecording = false; document.getElementById('micBtn').classList.remove('recording'); document.getElementById('micBtn').textContent = '🎙️'; document.getElementById('voiceIndicator').classList.remove('show'); return; } const SR = window.SpeechRecognition || window.webkitSpeechRecognition; if (!SR) { showToast('浏览器不支持语音识别'); return; } recognition = new SR(); recognition.lang = 'zh-CN'; recognition.continuous = false; recognition.interimResults = true; recognition.onstart = () => { isRecording = true; document.getElementById('micBtn').classList.add('recording'); document.getElementById('micBtn').textContent = '⏹️'; document.getElementById('voiceIndicator').classList.add('show'); }; recognition.onresult = (e) => { let t = ''; for (let i = e.resultIndex; i < e.results.length; i++) t += e.results[i][0].transcript; document.getElementById('recordInput').value = t; handleInputChange(); }; recognition.onend = () => { isRecording = false; document.getElementById('micBtn').classList.remove('recording'); document.getElementById('micBtn').textContent = '🎙️'; document.getElementById('voiceIndicator').classList.remove('show'); }; recognition.onerror = (e) => { isRecording = false; document.getElementById('micBtn').classList.remove('recording'); document.getElementById('micBtn').textContent = '🎙️'; document.getElementById('voiceIndicator').classList.remove('show'); showToast('语音识别出错'); }; recognition.start(); }
+
+// ==================== Stats ====================
+function setStatPeriod(p, btn) { currentStatPeriod = p; document.querySelectorAll('.period-tab').forEach(t => t.classList.remove('active')); btn.classList.add('active'); renderStats(); }
+function setStatSubTab(tab, btn) { currentStatSubTab = tab; document.querySelectorAll('.stat-sub-tab').forEach(t => t.classList.remove('active')); btn.classList.add('active'); document.getElementById('statChartsSection').style.display = tab === 'charts' ? 'block' : 'none'; document.getElementById('statBudgetSection').style.display = tab === 'budget' ? 'block' : 'none'; if (tab === 'budget') renderBudgetAnalysis(); }
+
+function renderStats() {
+  const now = new Date(); let f;
+  if (currentStatPeriod === 'month') { const s = `${now.getFullYear()}-${String(now.getMonth()+1).padStart(2,'0')}-01`; f = state.transactions.filter(t => t.date >= s); }
+  else if (currentStatPeriod === 'year') { f = state.transactions.filter(t => t.date >= `${now.getFullYear()}-01-01`); }
+  else f = [...state.transactions];
+  const inc = f.filter(t => t.type === 'income').reduce((s,t) => s + t.amount, 0);
+  const spd = getMonthSpending(f), inv = getMonthInvest(f), sur = inc - spd - inv;
+  document.getElementById('statIncome').textContent = formatMoney(inc); document.getElementById('statSpending').textContent = formatMoney(spd); document.getElementById('statInvest').textContent = formatMoney(inv);
+  const se = document.getElementById('statSurplus'); se.textContent = (sur >= 0 ? '+' : '-') + formatMoney(Math.abs(sur)); se.className = 'value ' + (sur >= 0 ? 'net-positive' : 'net-negative');
+  renderExpenseChart(f); renderTrendChart(f);
+  if (currentStatSubTab === 'budget') renderBudgetAnalysis();
+  renderTxList('allTx', [...f].sort((a,b) => b.date !== a.date ? b.date.localeCompare(a.date) : (b.createdAt||0) - (a.createdAt||0)));
+}
+
+function renderBudgetAnalysis() {
+  const c = document.getElementById('statBudgetSection'); let h = '';
+  const hasBudget = state.envelopes.some(e => (e.monthlyBudget||0) > 0);
+  if (!hasBudget) { c.innerHTML = '<div class="budget-progress-section" style="text-align:center;color:var(--text-tertiary);padding:24px">尚未设置信封预算，请前往设置页面配置</div>'; return; }
+  const se = state.envelopes.filter(e => e.type === 'spending'), ie = state.envelopes.filter(e => e.type === 'investing');
+  if (se.some(e => (e.monthlyBudget||0) > 0)) { h += '<div class="budget-progress-section"><div class="budget-header"><span class="title">🛒 消费信封</span></div><table class="budget-analysis-table"><thead><tr><th>信封</th><th>月预算</th><th>已用</th><th>剩余</th><th>使用率</th></tr></thead><tbody>'; se.forEach(e => { const b = e.monthlyBudget||0; if (b<=0) return; const u = getEnvelopeMonthUsed(e), d = b-u, r = ((u/b)*100).toFixed(1), o = u>b; h += `<tr><td><span class="envelope-badge spending-badge">消费</span> ${e.name}</td><td>${formatMoney(b)}</td><td class="${o?'over-budget':''}">${formatMoney(u)}</td><td class="${d>=0?'under-budget':'over-budget'}">${d>=0?'':'-'}${formatMoney(Math.abs(d))}</td><td class="${o?'over-budget':''}">${r}%</td></tr>`; }); h += '</tbody></table></div>'; }
+  if (ie.some(e => (e.monthlyBudget||0) > 0)) { h += '<div class="budget-progress-section"><div class="budget-header"><span class="title">📈 投资信封</span></div><table class="budget-analysis-table"><thead><tr><th>信封</th><th>月预算</th><th>已投</th><th>剩余</th><th>完成率</th></tr></thead><tbody>'; ie.forEach(e => { const b = e.monthlyBudget||0; if (b<=0) return; const u = getEnvelopeMonthUsed(e), d = b-u, r = ((u/b)*100).toFixed(1); h += `<tr><td><span class="envelope-badge investing-badge">投资</span> ${e.name}</td><td>${formatMoney(b)}</td><td>${formatMoney(u)}</td><td class="${d>=0?'under-budget':'over-budget'}">${d>=0?'':'-'}${formatMoney(Math.abs(d))}</td><td>${r}%</td></tr>`; }); h += '</tbody></table></div>'; }
+  c.innerHTML = h;
+}
+
+function renderExpenseChart(txs) {
+  const st = txs.filter(t => t.type === 'expense' && getEnvelopeInfo(t.envelope).type === 'spending'), cm = {};
+  st.forEach(t => { const cat = getCatInfo(t.category,'expense'); if (!cm[cat.name]) cm[cat.name] = { amount: 0, icon: cat.icon }; cm[cat.name].amount += t.amount; });
+  const en = Object.entries(cm).sort((a,b) => b[1].amount - a[1].amount);
+  if (!en.length) { if (expenseChart) { expenseChart.destroy(); expenseChart = null; } return; }
+  const colors = ['#6c5ce7','#e17055','#00b894','#fdcb6e','#e84393','#00cec9','#d63031','#74b9ff'];
+  const ctx = document.getElementById('expenseChart').getContext('2d'); if (expenseChart) expenseChart.destroy();
+  expenseChart = new Chart(ctx, { type: 'doughnut', data: { labels: en.map(([n,d]) => `${d.icon} ${n}`), datasets: [{ data: en.map(([_,d]) => d.amount), backgroundColor: colors.slice(0, en.length), borderWidth: 2, borderColor: getComputedStyle(document.documentElement).getPropertyValue('--bg-card').trim() }] }, options: { responsive: true, plugins: { legend: { position: 'bottom', labels: { padding: 12, usePointStyle: true, font: { size: 12 }, color: getComputedStyle(document.documentElement).getPropertyValue('--text-secondary').trim() } } }, cutout: '55%' } });
+}
+
+function renderTrendChart(txs) {
+  const now = new Date(); let labels = [], incD = [], spdD = [], invD = [];
+  if (currentStatPeriod !== 'month') { const ms = {}; txs.forEach(t => { const m = t.date.substring(0,7); if (!ms[m]) ms[m] = { income: 0, spending: 0, invest: 0 }; if (t.type === 'income') ms[m].income += t.amount; if (t.type === 'expense') { if (getEnvelopeInfo(t.envelope).type === 'spending') ms[m].spending += t.amount; else ms[m].invest += t.amount; } }); const sorted = Object.keys(ms).sort(); labels = sorted.map(m => m.substring(5)); incD = sorted.map(m => ms[m].income); spdD = sorted.map(m => ms[m].spending); invD = sorted.map(m => ms[m].invest); }
+  else { for (let i = 29; i >= 0; i--) { const d = new Date(now); d.setDate(d.getDate()-i); const ds = d.toISOString().split('T')[0]; labels.push(`${d.getMonth()+1}/${d.getDate()}`); const dt = txs.filter(t => t.date === ds); incD.push(dt.filter(t => t.type === 'income').reduce((s,t) => s + t.amount, 0)); spdD.push(dt.filter(t => t.type === 'expense' && getEnvelopeInfo(t.envelope).type === 'spending').reduce((s,t) => s + t.amount, 0)); invD.push(dt.filter(t => t.type === 'expense' && getEnvelopeInfo(t.envelope).type === 'investing').reduce((s,t) => s + t.amount, 0)); } }
+  const ctx = document.getElementById('trendChart').getContext('2d'); if (trendChart) trendChart.destroy();
+  const tc = getComputedStyle(document.documentElement); const ts = tc.getPropertyValue('--text-secondary').trim(), tt = tc.getPropertyValue('--text-tertiary').trim(), bc = tc.getPropertyValue('--border').trim();
+  trendChart = new Chart(ctx, { type: 'line', data: { labels, datasets: [ { label: '收入', data: incD, borderColor: '#00b894', backgroundColor: 'rgba(0,184,148,0.1)', fill: true, tension: 0.4, pointRadius: 2, borderWidth: 2 }, { label: '消费', data: spdD, borderColor: '#e17055', backgroundColor: 'rgba(225,112,85,0.1)', fill: true, tension: 0.4, pointRadius: 2, borderWidth: 2 }, { label: '投资', data: invD, borderColor: '#6c5ce7', backgroundColor: 'rgba(108,92,231,0.1)', fill: true, tension: 0.4, pointRadius: 2, borderWidth: 2, borderDash: [5,5] } ] }, options: { responsive: true, plugins: { legend: { labels: { usePointStyle: true, font: { size: 12 }, color: ts } } }, scales: { x: { ticks: { font: { size: 10 }, color: tt, maxTicksLimit: 8 }, grid: { display: false } }, y: { ticks: { font: { size: 10 }, color: tt }, grid: { color: bc } } } } });
+}
+
+// ==================== Wealth ====================
+function setWealthDim(dim, btn) { currentWealthDim = dim; document.querySelectorAll('.wealth-dim-tab').forEach(t => t.classList.remove('active')); btn.classList.add('active'); renderWealth(); }
+function getWealthPeriods(dim) { const now = new Date(), ps = [], cnt = dim === 'month' ? 12 : (dim === 'quarter' ? 8 : 5); for (let i = cnt - 1; i >= 0; i--) { let s, e, l; if (dim === 'month') { const d = new Date(now.getFullYear(), now.getMonth()-i, 1); s = `${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,'0')}-01`; const ed = new Date(d.getFullYear(), d.getMonth()+1, 0); e = `${ed.getFullYear()}-${String(ed.getMonth()+1).padStart(2,'0')}-${String(ed.getDate()).padStart(2,'0')}`; l = `${d.getFullYear()}/${d.getMonth()+1}`; } else if (dim === 'quarter') { const cq = Math.floor(now.getMonth()/3), qi = cq-i, yo = Math.floor(qi/4), qy = ((qi%4)+4)%4, y = now.getFullYear()+yo, qm = qy*3; s = `${y}-${String(qm+1).padStart(2,'0')}-01`; const ed = new Date(y, qm+3, 0); e = `${ed.getFullYear()}-${String(ed.getMonth()+1).padStart(2,'0')}-${String(ed.getDate()).padStart(2,'0')}`; l = `${y} Q${qy+1}`; } else { const y = now.getFullYear()-i; s = `${y}-01-01`; e = `${y}-12-31`; l = `${y}`; } ps.push({ start: s, end: e, label: l }); } return ps; }
+function getPeriodTxData(s, e) { const txs = state.transactions.filter(t => t.date >= s && t.date <= e); const income = txs.filter(t => t.type === 'income').reduce((s,t) => s + t.amount, 0), spending = txs.filter(t => t.type === 'expense' && getEnvelopeInfo(t.envelope).type === 'spending').reduce((s,t) => s + t.amount, 0), invest = txs.filter(t => t.type === 'expense' && getEnvelopeInfo(t.envelope).type === 'investing').reduce((s,t) => s + t.amount, 0); return { income, spending, invest, surplus: income - spending - invest }; }
+
+function renderWealth() {
+  const ps = getWealthPeriods(currentWealthDim), cp = ps[ps.length-1], pp = ps.length >= 2 ? ps[ps.length-2] : null;
+  const cd = getPeriodTxData(cp.start, cp.end), pd = pp ? getPeriodTxData(pp.start, pp.end) : null;
+  let spendingBalance = 0, investBalance = 0;
+  const spendingEnvs = [], investingEnvs = [];
+  state.envelopes.forEach(e => {
+    const b = getEnvelopeBalance(e);
+    const monthUsed = getEnvelopeMonthUsed(e);
+    const color = getEnvelopeColor(e);
+    const icon = getEnvelopeIcon(e);
+    if (e.type === 'spending') { spendingBalance += b; spendingEnvs.push({ ...e, balance: b, monthUsed, color, icon }); }
+    else { investBalance += b; investingEnvs.push({ ...e, balance: b, monthUsed, color, icon }); }
+  });
+  const totalBalance = spendingBalance + investBalance;
+  const pl = currentWealthDim === 'month' ? '本月' : (currentWealthDim === 'quarter' ? '本季度' : '本年度');
+  // Build spending envelope card
+  let spendCardHtml = '';
+  if (spendingEnvs.length) {
+    spendCardHtml = '<div class="wealth-env-card"><div class="wealth-env-card-title">🛒 消费信封</div>';
+    spendingEnvs.forEach(e => {
+      const budget = e.monthlyBudget || 0;
+      const used = e.monthUsed;
+      const pct = budget > 0 ? Math.min((used / budget) * 100, 100) : 0;
+      const barColor = e.color;
+      spendCardHtml += `<div class="wealth-env-row"><span class="env-icon">${e.icon}</span><span class="env-name">${e.name}</span><span class="env-amounts">已用 ${formatMoney(used)} | 余额 ${e.balance >= 0 ? '' : '-'}${formatMoney(Math.abs(e.balance))}</span></div><div class="wealth-env-bar-bg"><div class="wealth-env-bar-fill" style="width:${pct}%;background:${barColor}"></div></div>`;
+    });
+    spendCardHtml += '</div>';
+  }
+  // Build investing envelope card
+  let investCardHtml = '';
+  if (investingEnvs.length) {
+    investCardHtml = '<div class="wealth-env-card"><div class="wealth-env-card-title">📈 投资信封</div>';
+    investingEnvs.forEach(e => {
+      const budget = e.monthlyBudget || 0;
+      const used = e.monthUsed;
+      const pct = budget > 0 ? Math.min((used / budget) * 100, 100) : 0;
+      const barColor = e.color;
+      investCardHtml += `<div class="wealth-env-row"><span class="env-icon">${e.icon}</span><span class="env-name">${e.name}</span><span class="env-amounts">已投 ${formatMoney(used)} | 余额 ${e.balance >= 0 ? '' : '-'}${formatMoney(Math.abs(e.balance))}</span></div><div class="wealth-env-bar-bg"><div class="wealth-env-bar-fill" style="width:${pct}%;background:${barColor}"></div></div>`;
+    });
+    investCardHtml += '</div>';
+  }
+  document.getElementById('wealthHero').innerHTML = `<div class="hero-label">${pl}净结余</div><div class="hero-amount" style="color:#fff">${cd.surplus>=0?'+':'-'}${formatMoney(Math.abs(cd.surplus))}</div><div style="font-size:11px;color:rgba(255,255,255,0.6);text-align:center;margin-top:-4px;margin-bottom:4px">= 收入${formatMoney(cd.income)} - 消费${formatMoney(cd.spending)} - 投资${formatMoney(cd.invest)}</div><div class="hero-row"><div class="hero-stat"><div class="label">消费信封余额</div><div class="value">${formatMoney(spendingBalance)}</div></div><div class="hero-stat"><div class="label">投资信封余额</div><div class="value">${formatMoney(investBalance)}</div></div><div class="hero-stat"><div class="label">收入</div><div class="value">${formatMoney(cd.income)}</div></div></div>${spendCardHtml}${investCardHtml}`;
+  const ce = document.getElementById('wealthCompareSection');
+  if (pd) { const pnl = currentWealthDim === 'month' ? '上月' : (currentWealthDim === 'quarter' ? '上季度' : '去年'); function cc(c,p) { if (p===0) return c>0?100:(c<0?-100:0); return ((c-p)/Math.abs(p)*100).toFixed(1); } function ct(v) { if (Math.abs(v)<0.1) return '<span class="wc-change neutral">持平</span>'; return v>0?`<span class="wc-change up">↑${Math.abs(v)}%</span>`:`<span class="wc-change down">↓${Math.abs(v)}%</span>`; }
+  ce.innerHTML = `<div class="wealth-compare-card"><div><div class="wc-label">收入 vs ${pnl}</div><div style="font-size:12px;color:var(--text-tertiary)">${pnl} ${formatMoney(pd.income)}</div></div><div style="display:flex;align-items:center"><span class="wc-value income">${formatMoney(cd.income)}</span>${ct(cc(cd.income,pd.income))}</div></div><div class="wealth-compare-card"><div><div class="wc-label">消费 vs ${pnl}</div><div style="font-size:12px;color:var(--text-tertiary)">${pnl} ${formatMoney(pd.spending)}</div></div><div style="display:flex;align-items:center"><span class="wc-value expense">${formatMoney(cd.spending)}</span>${ct(cc(cd.spending,pd.spending))}</div></div><div class="wealth-compare-card"><div><div class="wc-label">投资 vs ${pnl}</div><div style="font-size:12px;color:var(--text-tertiary)">${pnl} ${formatMoney(pd.invest)}</div></div><div style="display:flex;align-items:center"><span class="wc-value" style="color:var(--invest-color)">${formatMoney(cd.invest)}</span>${ct(cc(cd.invest,pd.invest))}</div></div><div class="wealth-compare-card"><div><div class="wc-label">净结余 vs ${pnl}</div><div style="font-size:12px;color:var(--text-tertiary)">${pnl} ${formatMoney(pd.surplus)}</div></div><div style="display:flex;align-items:center"><span class="wc-value ${cd.surplus>=0?'income':'expense'}">${cd.surplus>=0?'+':'-'}${formatMoney(Math.abs(cd.surplus))}</span>${ct(cc(cd.surplus,pd.surplus))}</div></div>`;
+  } else ce.innerHTML = '<div class="wealth-compare-card"><div class="wc-label" style="text-align:center;width:100%">暂无上一周期数据</div></div>';
+  renderSpendingInvestChart(cd); renderNetAssetTrendChart(ps); renderWealthGrowthChart(ps);
+}
+
+function renderSpendingInvestChart(data) { const ctx = document.getElementById('spendingInvestChart'); if (!ctx) return; const c = ctx.getContext('2d'); if (spendingInvestChart) spendingInvestChart.destroy(); const labels = [], amounts = [], colors = []; state.envelopes.forEach(e => { const used = getEnvelopeMonthUsed(e); if (used > 0) { labels.push(getEnvelopeIcon(e) + ' ' + e.name); amounts.push(used); colors.push(getEnvelopeColor(e)); } }); if (!amounts.length) { spendingInvestChart = null; return; } spendingInvestChart = new Chart(c, { type: 'doughnut', data: { labels: labels, datasets: [{ data: amounts, backgroundColor: colors, borderWidth: 2, borderColor: getComputedStyle(document.documentElement).getPropertyValue('--bg-card').trim() }] }, options: { responsive: true, plugins: { legend: { position: 'bottom', labels: { padding: 12, usePointStyle: true, font: { size: 12 }, color: getComputedStyle(document.documentElement).getPropertyValue('--text-secondary').trim() } }, title: { display: true, text: '信封支出占比', font: { size: 14 }, color: getComputedStyle(document.documentElement).getPropertyValue('--text-secondary').trim() } }, cutout: '55%' } }); }
+function renderNetAssetTrendChart(periods) { const ls = [], d = []; periods.forEach(p => { ls.push(p.label); const txs = state.transactions.filter(t => t.date >= p.start && t.date <= p.end); d.push(txs.filter(t => t.type === 'income').reduce((s,t) => s + t.amount, 0) - txs.filter(t => t.type === 'expense').reduce((s,t) => s + t.amount, 0)); }); const ctx = document.getElementById('netAssetTrendChart').getContext('2d'); if (netAssetTrendChart) netAssetTrendChart.destroy(); const tc = getComputedStyle(document.documentElement); netAssetTrendChart = new Chart(ctx, { type: 'line', data: { labels: ls, datasets: [{ label: '净结余', data: d, borderColor: '#6c5ce7', backgroundColor: 'rgba(108,92,231,0.15)', fill: true, tension: 0.4, pointRadius: 4, pointBackgroundColor: '#6c5ce7', borderWidth: 3 }] }, options: { responsive: true, plugins: { legend: { labels: { usePointStyle: true, font: { size: 12 }, color: tc.getPropertyValue('--text-secondary').trim() } } }, scales: { x: { ticks: { font: { size: 10 }, color: tc.getPropertyValue('--text-tertiary').trim() }, grid: { display: false } }, y: { ticks: { font: { size: 10 }, color: tc.getPropertyValue('--text-tertiary').trim() }, grid: { color: tc.getPropertyValue('--border').trim() } } } } }); }
+function renderWealthGrowthChart(periods) { const ls = []; const envDatasets = {}; state.envelopes.forEach(e => { envDatasets[e.id] = { label: getEnvelopeIcon(e) + ' ' + e.name, data: [], backgroundColor: getEnvelopeColor(e) + 'cc', stack: e.type === 'spending' ? 'spending' : 'investing', borderRadius: 3, borderSkipped: false }; }); periods.forEach(p => { ls.push(p.label); state.envelopes.forEach(e => { const txs = state.transactions.filter(t => t.date >= p.start && t.date <= p.end && t.type === 'expense' && t.envelope === e.id); envDatasets[e.id].data.push(txs.reduce((s,t) => s + t.amount, 0)); }); }); const ctx = document.getElementById('wealthGrowthChart').getContext('2d'); if (wealthGrowthChart) wealthGrowthChart.destroy(); const tc = getComputedStyle(document.documentElement); const datasets = []; state.envelopes.filter(e => e.type === 'spending').forEach(e => datasets.push(envDatasets[e.id])); state.envelopes.filter(e => e.type === 'investing').forEach(e => datasets.push(envDatasets[e.id])); wealthGrowthChart = new Chart(ctx, { type: 'bar', data: { labels: ls, datasets: datasets }, options: { responsive: true, plugins: { legend: { labels: { usePointStyle: true, font: { size: 11 }, color: tc.getPropertyValue('--text-secondary').trim() } } }, scales: { x: { stacked: true, ticks: { font: { size: 10 }, color: tc.getPropertyValue('--text-tertiary').trim() }, grid: { display: false } }, y: { stacked: true, ticks: { font: { size: 10 }, color: tc.getPropertyValue('--text-tertiary').trim() }, grid: { color: tc.getPropertyValue('--border').trim() } } } } }); }
+
+// ==================== Settings ====================
+function renderSettings() {
+  document.getElementById('themeToggle').className = 'toggle' + (state.theme === 'dark' ? ' active' : '');
+  const se = state.envelopes.filter(e => e.type === 'spending'), ie = state.envelopes.filter(e => e.type === 'investing');
+  document.getElementById('spendingEnvelopeSummary').textContent = formatMoney(se.reduce((s,e) => s + (e.monthlyBudget||0), 0));
+  document.getElementById('investingEnvelopeSummary').textContent = formatMoney(ie.reduce((s,e) => s + (e.monthlyBudget||0), 0));
+  const el = document.getElementById('envelopeList'); let eh = '';
+  if (se.length) { eh += '<div class="account-section-header" style="color:var(--expense)">🛒 消费信封</div>'; se.forEach(e => { const bt = (e.monthlyBudget||0) > 0 ? `预算${formatMoney(e.monthlyBudget)}` : ''; eh += `<span class="tag-item" onclick="editEnvelope('${e.id}')" style="border:1px solid var(--expense)"><span class="emoji">🛒</span>${e.name}${bt?`<span style="font-size:10px;color:var(--primary);margin-left:2px">${bt}</span>`:''}<span class="remove" onclick="event.stopPropagation();removeEnvelope('${e.id}')">×</span></span>`; }); }
+  if (ie.length) { eh += '<div class="account-section-header" style="color:var(--invest-color)">📈 投资信封</div>'; ie.forEach(e => { const bt = (e.monthlyBudget||0) > 0 ? `预算${formatMoney(e.monthlyBudget)}` : ''; eh += `<span class="tag-item" onclick="editEnvelope('${e.id}')" style="border:1px solid var(--invest-color)"><span class="emoji">📈</span>${e.name}${bt?`<span style="font-size:10px;color:var(--primary);margin-left:2px">${bt}</span>`:''}<span class="remove" onclick="event.stopPropagation();removeEnvelope('${e.id}')">×</span></span>`; }); }
+  eh += '<span class="add-tag-btn" onclick="addEnvelope()">+ 添加信封</span>'; el.innerHTML = eh;
+
+  const { totalLiability } = getNetAssets();
+  document.getElementById('liabilityAccountsSummary').textContent = formatMoney(totalLiability);
+  const al = document.getElementById('accountList'); let ah = '';
+  const aa = state.accounts.filter(a => a.type === 'asset'), la = state.accounts.filter(a => a.type === 'liability');
+  if (aa.length) { ah += '<div class="account-section-header" style="color:var(--income)">💰 资产账户</div>'; aa.forEach(a => { ah += `<span class="tag-item" onclick="editAccount('${a.id}')" style="border:1px solid var(--income)"><span class="emoji">${a.icon}</span>${a.name}<span class="remove" onclick="event.stopPropagation();removeAccount('${a.id}')">×</span></span>`; }); }
+  ah += '<span class="add-tag-btn" onclick="addAccount()">+ 添加资产账户</span>';
+  if (la.length) { ah += '<div class="account-section-header" style="color:var(--expense)">💳 负债账户</div>'; la.forEach(a => { const b = getAccountBalance(a); ah += `<span class="tag-item" onclick="editAccount('${a.id}')" style="border:1px solid var(--expense)"><span class="emoji">${a.icon}</span>${a.name}<span style="font-size:10px;color:var(--expense);margin-left:2px">${formatMoney(Math.abs(b))}</span><span class="remove" onclick="event.stopPropagation();removeAccount('${a.id}')">×</span></span>`; }); }
+  ah += '<span class="add-tag-btn" onclick="addLiabilityAccount()">+ 添加负债账户</span>'; al.innerHTML = ah;
+
+  document.getElementById('expenseCatList').innerHTML = state.expenseCategories.map(c => `<span class="tag-item" onclick="editCategory('${c.id}','expense')"><span class="emoji">${c.icon}</span>${c.name}<span class="remove" onclick="event.stopPropagation();removeCategory('${c.id}','expense')">×</span></span>`).join('') + '<span class="add-tag-btn" onclick="addCategory(\'expense\')">+ 添加分类</span>';
+  document.getElementById('incomeCatList').innerHTML = state.incomeCategories.map(c => `<span class="tag-item" onclick="editCategory('${c.id}','income')"><span class="emoji">${c.icon}</span>${c.name}<span class="remove" onclick="event.stopPropagation();removeCategory('${c.id}','income')">×</span></span>`).join('') + '<span class="add-tag-btn" onclick="addCategory(\'income\')">+ 添加分类</span>';
+}
+function toggleTheme() { state.theme = state.theme === 'dark' ? 'light' : 'dark'; document.documentElement.setAttribute('data-theme', state.theme); saveState(); renderSettings(); }
+
+// ==================== Envelope CRUD ====================
+function addEnvelope() { showEnvelopeModal('添加信封', '', 'spending', 0, (name, type, budget) => { if (!name.trim()) { showToast('请输入信封名称'); return; } state.envelopes.push({ id: 'env_' + Date.now(), name: name.trim(), type, monthlyBudget: budget || 0 }); saveState(); renderSettings(); showToast('信封已添加'); }); }
+function editEnvelope(id) { const e = state.envelopes.find(e => e.id === id); if (!e) return; showEnvelopeModal('编辑信封', e.name, e.type, e.monthlyBudget||0, (name, type, budget) => { if (!name.trim()) { showToast('请输入信封名称'); return; } e.name = name.trim(); e.type = type; e.monthlyBudget = budget; saveState(); renderSettings(); showToast('信封已更新'); }); }
+function removeEnvelope(id) { if (state.transactions.some(t => t.envelope === id)) { showToast('该信封有关联记录，无法删除'); return; } if (state.envelopes.length <= 1) { showToast('至少保留一个信封'); return; } state.envelopes = state.envelopes.filter(e => e.id !== id); saveState(); renderSettings(); showToast('信封已删除'); }
+function showEnvelopeModal(title, curName, curType, curBudget, cb) {
+  document.getElementById('modalTitle').textContent = title;
+  window._envCallback = cb;
+  window._selEnvType = curType;
+  document.getElementById('modalBody').innerHTML = `<div class="field-group"><label>信封类型</label><div class="envelope-type-toggle"><button class="envelope-type-btn spending-type ${curType==='spending'?'active':''}" onclick="document.querySelectorAll('.envelope-type-btn').forEach(b=>b.classList.remove('active'));this.classList.add('active');window._selEnvType='spending'">🛒 消费信封</button><button class="envelope-type-btn investing-type ${curType==='investing'?'active':''}" onclick="document.querySelectorAll('.envelope-type-btn').forEach(b=>b.classList.remove('active'));this.classList.add('active');window._selEnvType='investing'">📈 投资信封</button></div><div style="font-size:11px;color:var(--text-tertiary);margin-top:-8px;margin-bottom:8px">${curType==='spending'?'消费信封支出算"消费"':'投资信封支出算"投资"，同时转入投资账户'}</div></div><div class="field-group"><label>名称</label><input class="modal-input" id="modalEnvName" value="${curName||''}" placeholder="输入信封名称"></div><div class="field-group"><label>月度预算</label><input class="modal-input" id="modalEnvBudget" type="number" value="${curBudget||0}" placeholder="0"><div style="font-size:11px;color:var(--text-tertiary);margin-top:-8px;margin-bottom:8px">本月该信封的预算金额</div></div><button class="modal-btn primary" onclick="const n=document.getElementById('modalEnvName').value,b=parseFloat(document.getElementById('modalEnvBudget').value)||0;window._envCallback(n,window._selEnvType,b);closeModalDirect()">确定</button><button class="modal-btn secondary" onclick="closeModalDirect()">取消</button>`;
+  document.getElementById('modalOverlay').classList.add('show');
+}
+
+// ==================== Account CRUD ====================
+function addLiabilityAccount() { showAccountModal('添加负债账户', '', 'liability', 0, '💳', (name, type, balance, emoji) => { if (!name.trim()) { showToast('请输入账户名称'); return; } state.accounts.push({ id: 'acc_' + Date.now(), name: name.trim(), icon: emoji || '💳', type: 'liability', balance: balance || 0 }); saveState(); renderSettings(); showToast('负债账户已添加'); }); }
+function addAccount() { showAccountModal('添加账户', '', 'asset', 0, '💰', (name, type, balance, emoji) => { if (!name.trim()) { showToast('请输入账户名称'); return; } state.accounts.push({ id: 'acc_' + Date.now(), name: name.trim(), icon: emoji || '💰', type, balance: balance || 0 }); saveState(); renderSettings(); showToast('账户已添加'); }); }
+function editAccount(id) { const a = state.accounts.find(a => a.id === id); if (!a) return; showAccountModal('编辑账户', a.name, a.type||'asset', a.balance||0, a.icon, (name, type, balance, emoji) => { if (!name.trim()) { showToast('请输入账户名称'); return; } a.name = name.trim(); a.type = type; a.balance = balance; a.icon = emoji || a.icon; delete a.monthlyBudget; delete a.usage; saveState(); renderSettings(); showToast('账户已更新'); }); }
+function removeAccount(id) { if (state.transactions.some(t => t.account === id || t.toAccount === id)) { showToast('该账户有关联记录，无法删除'); return; } if (state.accounts.length <= 1) { showToast('至少保留一个账户'); return; } state.accounts = state.accounts.filter(a => a.id !== id); saveState(); renderSettings(); showToast('账户已删除'); }
+function showAccountModal(title, curName, curType, curBal, curEmoji, cb) {
+  const emojis = ['💵','💚','💙','🏦','💳','👛','🤑','💰','📈','🏛️','💱','🪙','🌸','📱','🎯','🏠','🚗','✈️'];
+  let se = curEmoji || '💰', st = curType || 'asset';
+  document.getElementById('modalTitle').textContent = title;
+  document.getElementById('modalBody').innerHTML = `<div class="field-group"><label>账户类型</label><div class="account-type-toggle"><button class="account-type-btn asset-type ${st==='asset'?'active':''}" onclick="document.querySelectorAll('.account-type-btn').forEach(b=>b.classList.remove('active'));this.classList.add('active');window._selAccType='asset'">资产账户</button><button class="account-type-btn liability-type ${st==='liability'?'active':''}" onclick="document.querySelectorAll('.account-type-btn').forEach(b=>b.classList.remove('active'));this.classList.add('active');window._selAccType='liability'">负债账户</button></div></div><div class="field-group"><label>图标</label><div style="font-size:32px;margin-bottom:8px" id="selectedEmojiDisplay">${se}</div><div class="emoji-grid">${emojis.map(e => `<button class="emoji-option ${e===se?'selected':''}" onclick="document.querySelectorAll('.emoji-option').forEach(b=>b.classList.remove('selected'));this.classList.add('selected');window._selEmoji='${e}';document.getElementById('selectedEmojiDisplay').textContent='${e}'">${e}</button>`).join('')}</div></div><div class="field-group"><label>名称</label><input class="modal-input" id="modalAccName" value="${curName||''}" placeholder="输入名称"></div><div class="field-group"><label>${st==='liability'?'当前欠款':'当前余额'}</label><input class="modal-input" id="modalAccBal" type="number" value="${curBal||0}" placeholder="0"></div><button class="modal-btn primary" onclick="const n=document.getElementById('modalAccName').value,b=parseFloat(document.getElementById('modalAccBal').value)||0;window._accCallback(n,window._selAccType,b,window._selEmoji);closeModalDirect()">确定</button><button class="modal-btn secondary" onclick="closeModalDirect()">取消</button>`;
+  window._accCallback = cb;
+  window._selAccType = st; window._selEmoji = se;
+  document.getElementById('modalOverlay').classList.add('show');
+}
+
+// ==================== Category CRUD ====================
+function addCategory(type) { showEmojiModal('添加分类', '', '', (emoji, name) => { if (!name.trim()) { showToast('请输入分类名称'); return; } const l = type === 'expense' ? state.expenseCategories : state.incomeCategories; l.push({ id: 'cat_' + Date.now(), name: name.trim(), icon: emoji || '📦' }); saveState(); renderSettings(); showToast('分类已添加'); }); }
+function editCategory(id, type) { const l = type === 'expense' ? state.expenseCategories : state.incomeCategories, c = l.find(c => c.id === id); if (!c) return; showEmojiModal('编辑分类', c.icon, c.name, (emoji, name) => { if (!name.trim()) { showToast('请输入分类名称'); return; } c.icon = emoji || c.icon; c.name = name.trim(); saveState(); renderSettings(); showToast('分类已更新'); }); }
+function removeCategory(id, type) { if (state.transactions.some(t => t.category === id)) { showToast('该分类有关联记录，无法删除'); return; } if (type === 'expense') { if (state.expenseCategories.length <= 1) { showToast('至少保留一个分类'); return; } state.expenseCategories = state.expenseCategories.filter(c => c.id !== id); } else { if (state.incomeCategories.length <= 1) { showToast('至少保留一个分类'); return; } state.incomeCategories = state.incomeCategories.filter(c => c.id !== id); } saveState(); renderSettings(); showToast('分类已删除'); }
+function showEmojiModal(title, ce, cn, cb) {
+  const emojis = ['🍎','🍔','🍜','🚗','🚌','🛍️','🎮','🏠','🏥','📚','💰','🎁','📈','💎','💵','💚','💙','🏦','💳','👛','🤑','💱','🪙','👕','👟','💄','📱','💻','🎬','🎤','✈️','🏋️','💊','🦷','🎓','📖','🐾','💇','📦','☕','🍰','🍺','🎵','🛒','🏪','⚽','🎯','🎮','🎲','🎭'];
+  let se = ce || '📦';
+  document.getElementById('modalTitle').textContent = title;
+  document.getElementById('modalBody').innerHTML = `<div class="field-group"><label>图标</label><div style="font-size:32px;margin-bottom:8px" id="selectedEmojiDisplay">${se}</div><div class="emoji-grid">${emojis.map(e => `<button class="emoji-option ${e===se?'selected':''}" onclick="document.querySelectorAll('.emoji-option').forEach(b=>b.classList.remove('selected'));this.classList.add('selected');window._selEmoji='${e}';document.getElementById('selectedEmojiDisplay').textContent='${e}'">${e}</button>`).join('')}</div></div><div class="field-group"><label>名称</label><input class="modal-input" id="modalCatName" value="${cn||''}" placeholder="输入名称"></div><button class="modal-btn primary" onclick="const n=document.getElementById('modalCatName').value;window._catCallback(window._selEmoji,n);closeModalDirect()">确定</button><button class="modal-btn secondary" onclick="closeModalDirect()">取消</button>`;
+  window._catCallback = cb;
+  window._selEmoji = se;
+  document.getElementById('modalOverlay').classList.add('show');
+}
+
+function closeModalDirect() { document.getElementById('modalOverlay').classList.remove('show'); }
+function closeModal(e) { if (e.target === document.getElementById('modalOverlay')) closeModalDirect(); }
+
+// ==================== Data IO ====================
+function exportData() { const d = JSON.stringify(state, null, 2), b = new Blob([d], { type: 'application/json' }), u = URL.createObjectURL(b), a = document.createElement('a'); a.href = u; a.download = `Miss-Autumn数据_${new Date().toISOString().split('T')[0]}.json`; a.click(); URL.revokeObjectURL(u); showToast('数据已导出'); }
+function tryRecoverData() {
+  try {
+    const backup = localStorage.getItem('zhizhang_data_backup');
+    const current = localStorage.getItem('zhizhang_data');
+    let msg = '';
+    const bp = backup ? JSON.parse(backup) : null;
+    const cp = current ? JSON.parse(current) : null;
+    const bpTxCount = bp && bp.transactions ? bp.transactions.length : 0;
+    const cpTxCount = cp && cp.transactions ? cp.transactions.length : 0;
+    msg = `<div style="background:var(--bg-input);border-radius:var(--radius-sm);padding:16px;margin-bottom:16px;font-size:13px;line-height:1.8">`;
+    msg += `<div>📦 当前数据：<b>${cpTxCount}</b> 条记录</div>`;
+    msg += `<div>💾 备份数据：<b>${bpTxCount}</b> 条记录</div>`;
+    if (bpTxCount > cpTxCount) {
+      msg += `<div style="color:var(--income);margin-top:8px">✅ 备份数据更多，可以恢复</div>`;
+      msg += `</div>`;
+      msg += `<button class="modal-btn primary" onclick="doRecoverFromBackup()">恢复备份</button>`;
+    } else if (bpTxCount === cpTxCount && bpTxCount > 0) {
+      msg += `<div style="color:var(--text-secondary);margin-top:8px">当前数据和备份数据一致</div>`;
+      msg += `</div>`;
+      msg += `<div style="font-size:12px;color:var(--text-tertiary);margin-bottom:12px">如果数据仍然显示为0，可能是数据格式问题。可以尝试导出后重新导入。</div>`;
+    } else {
+      msg += `<div style="color:var(--expense);margin-top:8px">❌ 没有找到可恢复的备份数据</div>`;
+      msg += `</div>`;
+      msg += `<div style="font-size:12px;color:var(--text-tertiary);margin-bottom:12px">数据可能已被浏览器清除。建议通过导入JSON文件恢复。</div>`;
+    }
+    msg += `<button class="modal-btn secondary" onclick="closeModalDirect()">关闭</button>`;
+    document.getElementById('modalTitle').textContent = '数据恢复';
+    document.getElementById('modalBody').innerHTML = msg;
+    document.getElementById('modalOverlay').classList.add('show');
+  } catch(e) {
+    showToast('读取数据失败: ' + e.message);
+  }
+}
+function doRecoverFromBackup() {
+  try {
+    const backup = localStorage.getItem('zhizhang_data_backup');
+    if (!backup) { showToast('没有备份数据'); return; }
+    localStorage.setItem('zhizhang_data', backup);
+    loadState();
+    closeModalDirect();
+    showToast('数据已恢复！');
+    refreshCurrentPage();
+  } catch(e) { showToast('恢复失败: ' + e.message); }
+}
+function importData(event) { const f = event.target.files[0]; if (!f) return; const r = new FileReader(); r.onload = (e) => { try { const d = JSON.parse(e.target.result); if (d.accounts && d.transactions) { state = { ...state, ...d }; if (state.accounts) state.accounts.forEach(a => { if (a.balance === undefined) a.balance = 0; delete a.monthlyBudget; delete a.usage; }); if (!state.envelopes || !Array.isArray(state.envelopes)) state.envelopes = JSON.parse(JSON.stringify(DEFAULT_ENVELOPES)); if (state.transactions) state.transactions.forEach(t => { if (t.type === 'expense' && !t.envelope) t.envelope = 'living'; }); saveState(); showToast('数据导入成功'); refreshCurrentPage(); } else showToast('数据格式不正确'); } catch(err) { showToast('导入失败'); } }; r.readAsText(f); event.target.value = ''; }
+function clearAllData() { document.getElementById('modalTitle').textContent = '确认清空'; document.getElementById('modalBody').innerHTML = '<p style="text-align:center;color:var(--text-secondary);margin-bottom:20px">所有数据将被永久删除，此操作不可恢复。</p><button class="modal-btn danger" onclick="state.accounts=JSON.parse(JSON.stringify(DEFAULT_ACCOUNTS));state.envelopes=JSON.parse(JSON.stringify(DEFAULT_ENVELOPES));state.expenseCategories=[...DEFAULT_EXPENSE_CATS];state.incomeCategories=[...DEFAULT_INCOME_CATS];state.transactions=[];saveState();closeModalDirect();showToast(\'数据已清空\');refreshCurrentPage()">确认清空</button><button class="modal-btn secondary" onclick="closeModalDirect()">取消</button>'; document.getElementById('modalOverlay').classList.add('show'); }
+
+function refreshCurrentPage() { switchPage(currentPage); }
+function init() { loadState(); document.documentElement.setAttribute('data-theme', state.theme); document.getElementById('recordInput').addEventListener('input', handleInputChange); document.getElementById('expenseEnvelopeSelect').addEventListener('change', updateInvestAccountField); renderOverview(); }
+document.addEventListener('DOMContentLoaded', init);
+</script>
+</body>
+</html>
