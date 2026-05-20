@@ -341,8 +341,8 @@ body { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', 'PingFang SC'
         </div>
         <div id="expenseSelectorRow">
           <div class="selector-row">
-            <select id="expenseEnvelopeSelect"></select>
-            <select id="expenseCategorySelect"></select>
+            <select id="expenseCategorySelect" onchange="onCategoryChange()"></select>
+            <select id="expenseEnvelopeSelect" style="font-size:12px;max-width:120px;color:var(--text-secondary)"></select>
           </div>
           <div class="selector-row">
             <select id="expenseAccountSelect"></select>
@@ -456,10 +456,10 @@ const DEFAULT_ENVELOPES = [
   { id: 'finance', name: '理财投资', type: 'investing', monthlyBudget: 0 }
 ];
 const DEFAULT_EXPENSE_CATS = [
-  { id: 'food', name: '餐饮', icon: '🍜' },{ id: 'transport', name: '交通', icon: '🚗' },
-  { id: 'shopping', name: '购物', icon: '🛍️' },{ id: 'fun', name: '娱乐', icon: '🎮' },
-  { id: 'housing', name: '居住', icon: '🏠' },{ id: 'medical', name: '医疗', icon: '🏥' },
-  { id: 'education', name: '教育', icon: '📚' },{ id: 'other_exp', name: '其他', icon: '📦' }
+  { id: 'food', name: '餐饮', icon: '🍜', envelope: 'living' },{ id: 'transport', name: '交通', icon: '🚗', envelope: 'living' },
+  { id: 'shopping', name: '购物', icon: '🛍️', envelope: 'living' },{ id: 'fun', name: '娱乐', icon: '🎮', envelope: 'living' },
+  { id: 'housing', name: '居住', icon: '🏠', envelope: 'fixed' },{ id: 'medical', name: '医疗', icon: '🏥', envelope: 'health' },
+  { id: 'education', name: '教育', icon: '📚', envelope: 'growth' },{ id: 'other_exp', name: '其他', icon: '📦', envelope: 'living' }
 ];
 const DEFAULT_INCOME_CATS = [
   { id: 'salary', name: '工资', icon: '💰' },{ id: 'bonus', name: '奖金', icon: '🎁' },
@@ -812,20 +812,23 @@ function renderRecordPage() {
   const liabOpts = la.map(a => `<option value="${a.id}">${a.icon} ${a.name} [负债]</option>`).join('');
   const payOpts = assetOpts + liabOpts;
   const eas = document.getElementById('expenseAccountSelect'); eas.innerHTML = '<option value="" disabled>支付账户</option>' + payOpts; if (aa.length) eas.value = aa[0].id;
-  document.getElementById('expenseEnvelopeSelect').innerHTML = state.envelopes.map(e => `<option value="${e.id}">${e.type==='investing'?'📈':'🛒'} ${e.name} [${e.type==='investing'?'投资':'消费'}]</option>`).join('');
+  document.getElementById('expenseEnvelopeSelect').innerHTML = state.envelopes.map(e => `<option value="${e.id}">${e.type==='investing'?'📈':'🛒'} ${e.name}</option>`).join('');
   document.getElementById('investAccountSelect').innerHTML = assetOpts;
   if (aa.length) document.getElementById('investAccountSelect').value = aa[0].id;
-
   document.getElementById('toAccountSelect').innerHTML = '<option value="" disabled>还款目标</option>' + liabOpts;
   if (la.length) document.getElementById('toAccountSelect').value = la[0].id;
   updateCategorySelects();
   const ts = new Date().toISOString().split('T')[0]; document.getElementById('incomeDate').value = ts; document.getElementById('expenseDate').value = ts; document.getElementById('transferDate').value = ts;
-  updateRecordTypeUI(); updateInvestAccountField();
+  updateRecordTypeUI();
+  onCategoryChange();
   renderTxList('todayTx', state.transactions.filter(t => t.date === ts).sort((a,b) => (b.createdAt||0)-(a.createdAt||0)));
 }
 function updateCategorySelects() { document.getElementById('incomeCategorySelect').innerHTML = state.incomeCategories.map(c => `<option value="${c.id}">${c.icon} ${c.name}</option>`).join(''); document.getElementById('expenseCategorySelect').innerHTML = state.expenseCategories.map(c => `<option value="${c.id}">${c.icon} ${c.name}</option>`).join(''); }
 function updateRecordTypeUI() { const it = state.recordType === 'transfer', ii = state.recordType === 'income'; document.getElementById('incomeSelectorRow').style.display = (ii && !it) ? 'flex' : 'none'; document.getElementById('expenseSelectorRow').style.display = (state.recordType === 'expense' && !it) ? 'block' : 'none'; const tf = document.getElementById('transferFields'); if (it) tf.classList.add('show'); else tf.classList.remove('show'); }
-function updateInvestAccountField() { const eid = document.getElementById('expenseEnvelopeSelect').value, env = getEnvelopeInfo(eid), f = document.getElementById('investAccountField'); if (env.type === 'investing') f.classList.add('show'); else f.classList.remove('show'); }
+function updateInvestAccountField() { const eid = document.getElementById('expenseEnvelopeSelect').value, env = getEnvelopeInfo(eid), f = document.getElementById('investAccountField'); if (env && env.type === 'investing') f.classList.add('show'); else f.classList.remove('show'); }
+function onCategoryChange() { const cid = document.getElementById('expenseCategorySelect').value; const cat = state.expenseCategories.find(c => c.id === cid); if (cat) { const es = document.getElementById('expenseEnvelopeSelect'); if (cat.envelope) es.value = cat.envelope; else { const last = getLastEnvelopeForCat(cid); if (last) es.value = last; } updateInvestAccountField(); } const lastAcc = getLastAccountForCat(cid); if (lastAcc) { const as = document.getElementById('expenseAccountSelect'); as.value = lastAcc; } }
+function getLastAccountForCat(catId) { const txs = state.transactions.filter(t => t.type === 'expense' && t.category === catId); if (txs.length === 0) return null; return txs[txs.length - 1].account; }
+function getLastEnvelopeForCat(catId) { const txs = state.transactions.filter(t => t.type === 'expense' && t.category === catId); if (txs.length === 0) return null; return txs[txs.length - 1].envelope; }
 function setRecordType(type) { state.recordType = type; document.querySelectorAll('.type-toggle-btn').forEach(b => b.classList.remove('active')); document.querySelector(`.type-toggle-btn.${type}-type`).classList.add('active'); updateCategorySelects(); updateRecordTypeUI(); }
 function quickAmount(n) { const i = document.getElementById('recordInput'); i.value = (i.value || '') + n; i.focus(); }
 function handleInputChange() { const text = document.getElementById('recordInput').value, r = parseInput(text), el = document.getElementById('parsedResult'); if (r) { const tl = r.type === 'transfer' ? '转账' : (r.type === 'income' ? '收入' : '支出'); if (r.type === 'transfer') { el.innerHTML = `<div class="parsed-row"><span class="label">类型</span><span class="value transfer">转账</span></div><div class="parsed-row"><span class="label">金额</span><span class="value transfer">${formatMoney(r.amount)}</span></div><div class="parsed-row"><span class="label">备注</span><span class="value">${r.note}</span></div>`; } else { const cat = getCatInfo(r.category, r.type); const envInfo = r.envelope ? getEnvelopeInfo(r.envelope) : null; const accInfo = r.account ? getAccountInfo(r.account) : null; let html = `<div class="parsed-row"><span class="label">类型</span><span class="value ${r.type}">${tl}</span></div><div class="parsed-row"><span class="label">金额</span><span class="value ${r.type}">${formatMoney(r.amount)}</span></div><div class="parsed-row"><span class="label">分类</span><span class="value">${cat.icon} ${cat.name}</span></div>`; if (envInfo) html += `<div class="parsed-row"><span class="label">信封</span><span class="value">✉️${envInfo.name}</span></div>`; if (accInfo) html += `<div class="parsed-row"><span class="label">账户</span><span class="value">${accInfo.icon} ${accInfo.name}</span></div>`; html += `<div class="parsed-row"><span class="label">备注</span><span class="value">${r.note}</span></div>`; el.innerHTML = html; } el.classList.add('show'); } else { el.classList.remove('show'); } }
@@ -836,9 +839,15 @@ function submitRecord() {
   if (state.recordType === 'income') { if (!text) { showToast('请输入记账内容'); return; } const r = parseInput(text); if (!r) { showToast('未能识别金额'); return; } const cid = document.getElementById('incomeCategorySelect').value, dt = document.getElementById('incomeDate').value || r.date; state.transactions.push({ id: 'tx_' + Date.now() + '_' + Math.random().toString(36).substr(2,5), type: 'income', amount: r.amount, category: cid || r.category, account: 'income', note: r.note, date: dt, createdAt: Date.now() }); saveState(); showToast(`已记录：收入 ${formatMoney(r.amount)}`); document.getElementById('recordInput').value = ''; document.getElementById('parsedResult').classList.remove('show'); renderRecordPage(); return; }
   if (!text) { showToast('请输入记账内容'); return; } const r = parseInput(text); if (!r) { showToast('未能识别金额'); return; }
   // 自动选中解析出的信封和账户
-  if (r.envelope) { const es = document.getElementById('expenseEnvelopeSelect'); if (es) es.value = r.envelope; updateInvestAccountField(); }
+  if (r.envelope) { const es = document.getElementById('expenseEnvelopeSelect'); if (es) es.value = r.envelope; }
   if (r.account) { const as = document.getElementById('expenseAccountSelect'); if (as) as.value = r.account; }
-  const aid = document.getElementById('expenseAccountSelect').value, eid = document.getElementById('expenseEnvelopeSelect').value, cid = document.getElementById('expenseCategorySelect').value, dt = document.getElementById('expenseDate').value || r.date;
+  const cid = document.getElementById('expenseCategorySelect').value || r.category;
+  const cat = state.expenseCategories.find(c => c.id === cid);
+  let eid = document.getElementById('expenseEnvelopeSelect').value;
+  if (!eid && cat && cat.envelope) { eid = cat.envelope; const es = document.getElementById('expenseEnvelopeSelect'); if (es) es.value = eid; }
+  if (!eid) { const lastE = getLastEnvelopeForCat(cid); if (lastE) eid = lastE; }
+  updateInvestAccountField();
+  const aid = document.getElementById('expenseAccountSelect').value, dt = document.getElementById('expenseDate').value || r.date;
   if (!aid) { showToast('请选择支付账户'); return; } if (!eid) { showToast('请选择信封'); return; }
   const env = getEnvelopeInfo(eid), tx = { id: 'tx_' + Date.now() + '_' + Math.random().toString(36).substr(2,5), type: 'expense', amount: r.amount, category: cid || r.category, envelope: eid, account: aid, note: r.note, date: dt, createdAt: Date.now() };
   if (env.type === 'investing') { const iaid = document.getElementById('investAccountSelect').value; if (!iaid) { showToast('请选择转入投资账户'); return; } tx.investAccount = iaid; }
@@ -1072,7 +1081,7 @@ function importData(event) { const f = event.target.files[0]; if (!f) return; co
 function clearAllData() { document.getElementById('modalTitle').textContent = '确认清空'; document.getElementById('modalBody').innerHTML = '<p style="text-align:center;color:var(--text-secondary);margin-bottom:20px">所有数据将被永久删除，此操作不可恢复。</p><button class="modal-btn danger" onclick="state.accounts=JSON.parse(JSON.stringify(DEFAULT_ACCOUNTS));state.envelopes=JSON.parse(JSON.stringify(DEFAULT_ENVELOPES));state.expenseCategories=[...DEFAULT_EXPENSE_CATS];state.incomeCategories=[...DEFAULT_INCOME_CATS];state.transactions=[];saveState();closeModalDirect();showToast(\'数据已清空\');refreshCurrentPage()">确认清空</button><button class="modal-btn secondary" onclick="closeModalDirect()">取消</button>'; document.getElementById('modalOverlay').classList.add('show'); }
 
 function refreshCurrentPage() { switchPage(currentPage); }
-function init() { loadState(); document.documentElement.setAttribute('data-theme', state.theme); document.getElementById('recordInput').addEventListener('input', handleInputChange); document.getElementById('expenseEnvelopeSelect').addEventListener('change', updateInvestAccountField); renderOverview(); }
+function init() { loadState(); document.documentElement.setAttribute('data-theme', state.theme); document.getElementById('recordInput').addEventListener('input', handleInputChange); document.getElementById('expenseEnvelopeSelect').addEventListener('change', updateInvestAccountField); document.getElementById('expenseCategorySelect').addEventListener('change', onCategoryChange); renderOverview(); }
 document.addEventListener('DOMContentLoaded', init);
 </script>
 </body>
