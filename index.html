@@ -614,6 +614,8 @@ function parseInput(text) {
   if (!parsedDate && text.match(/前天/)) { parsedDate = new Date(today); parsedDate.setDate(parsedDate.getDate()-2); text = text.replace('前天',''); }
   if (!parsedDate && text.match(/昨天/)) { parsedDate = new Date(today); parsedDate.setDate(parsedDate.getDate()-1); text = text.replace('昨天',''); }
   if (parsedDate) date = parsedDate.toISOString().split('T')[0];
+  // 识别自定义类别名
+  if (type !== 'transfer') { for (const cat of (type === 'expense' ? state.expenseCategories : state.incomeCategories)) { if (cat.id.startsWith('cat_') && text.includes(cat.name)) { category = cat.id; text = text.replace(cat.name, ''); break; } } }
   // 识别信封名
   for (const env of state.envelopes) { if (text.includes(env.name)) { envelope = env.id; text = text.replace(env.name, ''); break; } }
   // 识别账户名（资产+负债）
@@ -839,6 +841,7 @@ function submitRecord() {
   if (state.recordType === 'income') { if (!text) { showToast('请输入记账内容'); return; } const r = parseInput(text); if (!r) { showToast('未能识别金额'); return; } const cid = document.getElementById('incomeCategorySelect').value, dt = document.getElementById('incomeDate').value || r.date; state.transactions.push({ id: 'tx_' + Date.now() + '_' + Math.random().toString(36).substr(2,5), type: 'income', amount: r.amount, category: cid || r.category, account: 'income', note: r.note, date: dt, createdAt: Date.now() }); saveState(); showToast(`已记录：收入 ${formatMoney(r.amount)}`); document.getElementById('recordInput').value = ''; document.getElementById('parsedResult').classList.remove('show'); renderRecordPage(); return; }
   if (!text) { showToast('请输入记账内容'); return; } const r = parseInput(text); if (!r) { showToast('未能识别金额'); return; }
   // 自动选中解析出的信封和账户
+  if (r.category) { const cs = document.getElementById('expenseCategorySelect'); if (cs) { cs.value = r.category; onCategoryChange(); } }
   if (r.envelope) { const es = document.getElementById('expenseEnvelopeSelect'); if (es) es.value = r.envelope; }
   if (r.account) { const as = document.getElementById('expenseAccountSelect'); if (as) as.value = r.account; }
   const cid = document.getElementById('expenseCategorySelect').value || r.category;
