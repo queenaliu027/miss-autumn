@@ -560,8 +560,9 @@ function addChatBubble(role, content, extra) {
   var area = document.getElementById('chatArea');
   var div = document.createElement('div');
   div.className = 'chat-bubble ' + role;
+  var safeContent = escapeHtml(content).replace(/'/g, '&#39;').replace(/"/g, '&quot;');
   if (role === 'ai') {
-    var speakBtn = '<button class="speak-btn" onclick="speakBubble(this, this.parentElement.textContent)" title="朗读">🔊</button>';
+    var speakBtn = '<button class="speak-btn" onclick="speakBubble(this, decodeURIComponent(\'' + encodeURIComponent(content) + '\'))" title="朗读">🔊</button>';
     div.innerHTML = '<div class="bubble-avatar">🧑‍🏫</div><div class="bubble-content">' + escapeHtml(content) + speakBtn + '</div>';
   } else if (role === 'user') {
     div.innerHTML = '<div class="bubble-content">' + escapeHtml(content) + '</div>';
@@ -585,10 +586,12 @@ function formatFeedback(text) {
   /* Close the fb-continue div after the 💬 line */
   var lines = html.split('\n');
   var result = [];
+  var rawLines = text.split('\n');
   for (var i = 0; i < lines.length; i++) {
     if (lines[i].indexOf('💬') === 0 || lines[i].indexOf('<div class="fb-continue">💬') >= 0) {
-      /* Add speak button for 💬 content */
-      var speakBtn = '<button class="speak-btn" onclick="speakBubble(this, this.parentElement.textContent)" title="朗读">🔊</button>';
+      /* Add speak button with clean text from raw content */
+      var rawLine = rawLines[i] || '';
+      var speakBtn = '<button class="speak-btn" onclick="speakBubble(this, decodeURIComponent(\'' + encodeURIComponent(rawLine) + '\'))" title="朗读">🔊</button>';
       result.push(lines[i] + speakBtn + '</div>');
     } else {
       result.push(lines[i]);
@@ -1265,7 +1268,10 @@ function initSpeechRecognition() {
   var micBtn = document.getElementById('micBtn');
   if (!SpeechRecognition) {
     micBtn.classList.add('disabled');
-    micBtn.title = '浏览器不支持语音输入';
+    micBtn.title = '浏览器不支持语音输入，请使用键盘自带的语音听写';
+    micBtn.onclick = function() {
+      showToast('该浏览器不支持语音输入，请用键盘上的🎤听写按钮');
+    };
     return;
   }
   speechRecognition = new SpeechRecognition();
@@ -1290,7 +1296,11 @@ function initSpeechRecognition() {
     micBtn.classList.remove('recording');
     micBtn.textContent = '🎤';
     if (event.error === 'not-allowed') {
-      showToast('请允许麦克风权限');
+      showToast('请允许麦克风权限，或在手机设置中开启');
+    } else if (event.error === 'network') {
+      showToast('语音识别需要网络连接');
+    } else if (event.error !== 'aborted') {
+      showToast('语音识别出错：' + event.error + '，可使用键盘听写');
     }
   };
 }
@@ -1325,12 +1335,42 @@ function setSpeechLang(lang) {
 }
 
 /* ========== SPEECH SYNTHESIS ========== */
+var voicesReady = false;
+var enVoice = null;
+function warmUpVoices() {
+  if (voicesReady) return;
+  function loadVoices() {
+    var voices = speechSynthesis.getVoices();
+    if (voices.length > 0) {
+      voicesReady = true;
+      /* Find best English voice */
+      enVoice = null;
+      for (var i = 0; i < voices.length; i++) {
+        if (voices[i].lang === 'en-US' && voices[i].localService) { enVoice = voices[i]; break; }
+      }
+      if (!enVoice) {
+        for (var i = 0; i < voices.length; i++) {
+          if (voices[i].lang.indexOf('en') === 0) { enVoice = voices[i]; break; }
+        }
+      }
+    }
+  }
+  loadVoices();
+  if (speechSynthesis.onvoiceschanged !== undefined) {
+    speechSynthesis.onvoiceschanged = loadVoices;
+  }
+  /* iOS workaround: speak a silent utterance to activate */
+  var warmup = new SpeechSynthesisUtterance('');
+  warmup.volume = 0;
+  speechSynthesis.speak(warmup);
+}
 function speakBubble(btnEl, rawText) {
   if (speechSynthesis.speaking) {
     speechSynthesis.cancel();
     btnEl.classList.remove('speaking');
     return;
   }
+  warmUpVoices();
   /* Extract English-only text: remove Chinese chars, emoji, and section markers */
   var text = rawText;
   /* Remove section emoji markers */
@@ -1343,6 +1383,8 @@ function speakBubble(btnEl, rawText) {
   text = text.replace(/🔊/g, '');
   /* Remove formula patterns like (formula) in Chinese parens */
   text = text.replace(/[（(][^）)]*[）)]/g, '');
+  /* Remove arrows and special symbols */
+  text = text.replace(/[→❌✨]/g, ' ');
   /* Clean up whitespace */
   text = text.replace(/\s+/g, ' ').trim();
   if (!text) {
@@ -1352,14 +1394,19 @@ function speakBubble(btnEl, rawText) {
   var utterance = new SpeechSynthesisUtterance(text);
   utterance.lang = 'en-US';
   utterance.rate = 0.9;
+  utterance.volume = 1;
+  if (enVoice) { utterance.voice = enVoice; }
   utterance.onstart = function() {
     btnEl.classList.add('speaking');
   };
   utterance.onend = function() {
     btnEl.classList.remove('speaking');
   };
-  utterance.onerror = function() {
+  utterance.onerror = function(e) {
     btnEl.classList.remove('speaking');
+    if (e.error !== 'canceled') {
+      showToast('朗读失败，请检查手机音量');
+    }
   };
   speechSynthesis.speak(utterance);
 }
@@ -1450,6 +1497,8 @@ function init() {
   appData.stats.totalScenarios = appData.scenarios.length;
   saveData(appData);
   updateProgress();
+  /* Warm up speech synthesis for mobile */
+  if (window.speechSynthesis) { warmUpVoices(); }
   /* Initialize speech recognition */
   initSpeechRecognition();
   /* Restore speech language setting */
