@@ -232,6 +232,53 @@ body { font-family: -apple-system, BlinkMacSystemFont, 'SF Pro Text', 'Segoe UI'
 .speech-lang-toggle { display:flex; gap:4px; }
 .speech-lang-toggle .lang-opt { padding:4px 10px; border-radius:12px; border:1px solid var(--border); background:transparent; color:var(--text-secondary); font-size:12px; cursor:pointer; transition:all 0.2s; font-family:inherit; }
 .speech-lang-toggle .lang-opt.active { border-color:var(--accent); background:var(--accent-bg); color:var(--accent); }
+
+/* Mode toggle buttons */
+.mode-toggle { display:flex; gap:8px; margin-bottom:12px; }
+.mode-toggle .mode-btn { flex:1; padding:10px; border-radius:var(--radius-sm); border:1px solid var(--border); background:transparent; color:var(--text-secondary); font-size:13px; font-weight:600; cursor:pointer; transition:all 0.2s; font-family:inherit; text-align:center; }
+.mode-toggle .mode-btn.active { border-color:var(--accent); background:var(--accent-bg); color:var(--accent); }
+.mode-toggle .mode-btn:active { transform:scale(0.96); }
+
+/* Read result card */
+.read-result { background:var(--bg-card); border-radius:var(--radius); padding:16px; margin:8px 0; border:1px solid var(--border); animation:slideUp 0.3s ease; }
+.read-result .original { font-size:18px; line-height:1.6; margin-bottom:8px; color:var(--text); }
+.read-result .diff-word { padding:2px 4px; border-radius:4px; margin:0 1px; display:inline; font-size:18px; }
+.read-result .diff-word.match { color:var(--text); }
+.read-result .diff-word.mismatch { background:rgba(255,107,107,0.2); color:var(--warn); text-decoration:underline wavy var(--warn); }
+.read-result .diff-word.missing { background:rgba(255,107,107,0.1); color:var(--text-tertiary); text-decoration:line-through; }
+.read-result .accuracy { font-size:14px; color:var(--accent); margin-top:8px; font-weight:600; }
+
+/* Readalong card */
+.readalong-card { background:var(--bg-card); border:1px solid var(--accent); border-radius:var(--radius); padding:16px; margin-bottom:12px; animation:slideUp 0.4s ease; }
+.readalong-card .orig-sentence { font-size:18px; line-height:1.8; color:var(--text); margin-bottom:12px; }
+.readalong-card .card-actions { display:flex; gap:8px; margin-bottom:12px; }
+.readalong-card .card-actions button { padding:6px 14px; border-radius:var(--radius-sm); border:1px solid var(--border); background:var(--bg-input); color:var(--text-secondary); font-size:12px; cursor:pointer; transition:all 0.2s; font-family:inherit; }
+.readalong-card .card-actions button:active { transform:scale(0.95); }
+.readalong-card .card-actions button:hover { border-color:var(--accent); color:var(--accent); }
+
+/* Pronunciation advice card */
+.pron-advice { background:var(--bg-card); border:1px solid var(--accent2); border-radius:var(--radius); padding:16px; margin-bottom:12px; animation:slideUp 0.4s ease; line-height:1.8; font-size:14px; }
+.pron-advice .advice-title { font-size:13px; color:var(--accent2); margin-bottom:8px; font-weight:600; }
+
+/* Voice input area */
+.voice-input-area { display:none; flex-direction:column; align-items:center; gap:10px; padding:12px 16px calc(12px + var(--safe-bottom)); background:var(--bg-card); border-top:1px solid var(--border); flex-shrink:0; }
+.voice-input-area.active { display:flex; }
+.big-mic-btn { width:80px; height:80px; border-radius:50%; background:var(--gradient); border:none; color:#0a0a1a; font-size:32px; cursor:pointer; display:flex; align-items:center; justify-content:center; transition:all 0.2s; position:relative; -webkit-user-select:none; user-select:none; }
+.big-mic-btn.recording { background:var(--warn); color:#fff; animation:recPulse 1.2s ease infinite; transform:scale(1.15); }
+@keyframes recPulse { 0%,100%{box-shadow:0 0 0 0 rgba(255,107,107,0.4)} 50%{box-shadow:0 0 0 20px rgba(255,107,107,0)} }
+.big-mic-btn .wave { position:absolute; width:100%; height:100%; border-radius:50%; border:2px solid var(--warn); opacity:0; pointer-events:none; }
+.big-mic-btn.recording .wave { animation:waveOut 1.5s ease-out infinite; }
+.big-mic-btn.recording .wave:nth-child(2) { animation-delay:0.5s; }
+.big-mic-btn.recording .wave:nth-child(3) { animation-delay:1s; }
+@keyframes waveOut { 0%{transform:scale(1);opacity:0.6} 100%{transform:scale(2);opacity:0} }
+.mic-label { font-size:12px; color:var(--text-secondary); }
+.voice-switch-btns { display:flex; gap:8px; }
+
+/* Recording status */
+.rec-status { font-size:13px; color:var(--accent); display:none; align-items:center; gap:6px; }
+.rec-status.active { display:flex; }
+.rec-status .rec-dot { width:8px; height:8px; border-radius:50%; background:var(--warn); animation:recDotPulse 1s ease infinite; }
+@keyframes recDotPulse { 0%,100%{opacity:1} 50%{opacity:0.3} }
 </style>
 </head>
 <body>
@@ -269,6 +316,13 @@ body { font-family: -apple-system, BlinkMacSystemFont, 'SF Pro Text', 'Segoe UI'
         </div>
         <button class="start-scenario-btn" id="startScenarioBtn" disabled onclick="startScenario()">开始场景对话</button>
       </div>
+      
+      <!-- Mode Toggle -->
+      <div class="mode-toggle" id="modeToggle" style="display:none">
+        <button class="mode-btn active" id="modeDialog" onclick="switchPracticeMode('dialog')">💬 对话模式</button>
+        <button class="mode-btn" id="modeReadalong" onclick="switchPracticeMode('readalong')">🗣️ 跟读模式</button>
+      </div>
+
       <!-- Chat Area -->
       <div class="chat-area" id="chatArea" style="display:none"></div>
       <!-- New Scenario -->
@@ -346,6 +400,25 @@ body { font-family: -apple-system, BlinkMacSystemFont, 'SF Pro Text', 'Segoe UI'
             <button class="lang-opt" id="langZh" onclick="setSpeechLang('zh-CN')">中英</button>
           </div>
         </div>
+        <div class="setting-item">
+          <div>
+            <div class="label">自动朗读AI回复</div>
+            <div class="sublabel">语音对话模式下自动播报</div>
+          </div>
+          <div class="speech-lang-toggle">
+            <button class="lang-opt" id="autoReadOn" onclick="setAutoRead(true)">开</button>
+            <button class="lang-opt" id="autoReadOff" onclick="setAutoRead(false)">关</button>
+          </div>
+        </div>
+        <div class="setting-item">
+          <div class="label">语音对话语速</div>
+          <select id="settingVoiceRate" onchange="saveSetting('voiceRate', parseFloat(this.value))">
+            <option value="0.7">0.7 慢速</option>
+            <option value="0.8">0.8 稍慢</option>
+            <option value="0.9" selected>0.9 正常</option>
+            <option value="1.0">1.0 标准</option>
+          </select>
+        </div>
       </div>
       <div class="setting-group">
         <div class="group-title">数据管理</div>
@@ -356,7 +429,7 @@ body { font-family: -apple-system, BlinkMacSystemFont, 'SF Pro Text', 'Segoe UI'
         </div>
         <input type="file" id="importFileInput" accept=".json" style="display:none" onchange="handleImport(event)">
       </div>
-      <div class="version-footer">English Pilot v1.0 · 场景驱动学英语 · 数据仅存储在本地</div>
+      <div class="version-footer">English Pilot v1.1 · 场景驱动学英语 · 数据仅存储在本地</div>
     </div>
   </div>
 
@@ -365,6 +438,23 @@ body { font-family: -apple-system, BlinkMacSystemFont, 'SF Pro Text', 'Segoe UI'
     <textarea id="chatInput" rows="1" placeholder="Type your reply in English..." onkeydown="handleInputKey(event)" oninput="autoResize(this)"></textarea>
     <button class="mic-btn" id="micBtn" onclick="toggleMic()" title="语音输入">🎤</button>
     <button class="send-btn" id="sendBtn" onclick="sendMessage()">➤</button>
+  </div>
+
+  
+  <!-- Voice Input Area (for voice dialog mode and readalong mode) -->
+  <div class="voice-input-area" id="voiceInputArea">
+    <div class="rec-status" id="recStatus"><span class="rec-dot"></span> <span id="recStatusText">识别中...</span></div>
+    <button class="big-mic-btn" id="bigMicBtn">
+      <span class="wave"></span>
+      <span class="wave"></span>
+      <span class="wave"></span>
+      <span id="bigMicIcon">🎤</span>
+    </button>
+    <div class="mic-label" id="micLabel">按住说话</div>
+    <div class="voice-switch-btns" id="voiceSwitchBtns">
+      <button class="btn btn-secondary btn-sm" onclick="switchInputMode('typing')">⌨️ 切换打字</button>
+      <button class="btn btn-secondary btn-sm" id="voiceToReadalongBtn" onclick="switchPracticeMode('readalong')" style="display:none">🗣️ 跟读</button>
+    </div>
   </div>
 
   <!-- Bottom Navigation -->
@@ -426,7 +516,9 @@ var DEFAULT_DATA = {
     level: 'intermediate',
     dailyWordCount: 5,
     corsProxy: false,
-    speechLang: 'en-US'
+    speechLang: 'en-US',
+    autoRead: true,
+    voiceRate: 0.9
   },
   grammarHoles: [],
   vocabulary: [],
@@ -482,10 +574,18 @@ function switchTab(tab) {
   });
   var inputArea = document.getElementById('inputArea');
   var grammarFab = document.getElementById('grammarFab');
+  var voiceArea = document.getElementById('voiceInputArea');
   if (tab === 'practice' && appData.currentScenario) {
-    inputArea.style.display = 'flex';
+    if (inputMode === 'typing' && practiceMode === 'dialog') {
+      inputArea.style.display = 'flex';
+      voiceArea.classList.remove('active');
+    } else {
+      inputArea.style.display = 'none';
+      voiceArea.classList.add('active');
+    }
   } else {
     inputArea.style.display = 'none';
+    voiceArea.classList.remove('active');
   }
   if (tab === 'grammar') {
     grammarFab.style.display = 'flex';
@@ -534,6 +634,8 @@ function startScenario() {
   document.getElementById('chatArea').style.display = 'block';
   document.getElementById('newScenarioArea').style.display = 'none';
   document.getElementById('inputArea').style.display = 'flex';
+  showModeToggle();
+  switchPracticeMode('dialog');
   appData.currentScenario = {
     category: selectedCategory,
     messages: [],
@@ -551,6 +653,10 @@ function resetScenario() {
   document.getElementById('newScenarioArea').style.display = 'none';
   document.getElementById('categorySelection').style.display = 'block';
   document.getElementById('inputArea').style.display = 'none';
+  document.getElementById('voiceInputArea').classList.remove('active');
+  hideModeToggle();
+  practiceMode = 'dialog';
+  inputMode = 'typing';
   document.querySelectorAll('.category-btn').forEach(function(b){ b.classList.remove('active'); });
   selectedCategory = null;
   document.getElementById('startScenarioBtn').disabled = true;
@@ -1099,6 +1205,10 @@ function renderSettings() {
   var savedLang = appData.settings.speechLang || 'en-US';
   document.getElementById('langEn').classList.toggle('active', savedLang === 'en-US');
   document.getElementById('langZh').classList.toggle('active', savedLang === 'zh-CN');
+  var autoRead = appData.settings.autoRead !== false;
+  document.getElementById('autoReadOn').classList.toggle('active', autoRead === true);
+  document.getElementById('autoReadOff').classList.toggle('active', autoRead === false);
+  document.getElementById('settingVoiceRate').value = String(appData.settings.voiceRate || 0.9);
 }
 
 function saveSetting(key, value) {
@@ -1475,6 +1585,341 @@ function addMixInputVocab(word, meaning, exampleSentence, altWords) {
   saveData(appData);
 }
 
+
+/* ========== PRACTICE MODE MANAGEMENT ========== */
+var practiceMode = 'dialog';
+var inputMode = 'typing';
+var readalongSentence = '';
+var readalongSpoken = '';
+var isVoiceRecording = false;
+var voiceRecognition = null;
+
+function switchPracticeMode(mode) {
+  practiceMode = mode;
+  document.getElementById('modeDialog').classList.toggle('active', mode === 'dialog');
+  document.getElementById('modeReadalong').classList.toggle('active', mode === 'readalong');
+  if (mode === 'dialog') {
+    switchInputMode(inputMode);
+  } else if (mode === 'readalong') {
+    inputMode = 'voice';
+    document.getElementById('inputArea').style.display = 'none';
+    document.getElementById('voiceInputArea').classList.add('active');
+    document.getElementById('micLabel').textContent = '按住跟读';
+    var btns = document.getElementById('voiceSwitchBtns');
+    btns.innerHTML = '<button class="btn btn-secondary btn-sm" onclick="switchPracticeMode(\'dialog\')">💬 切换对话模式</button>';
+    generateReadalongSentence();
+  }
+}
+
+function switchInputMode(mode) {
+  inputMode = mode;
+  if (mode === 'typing') {
+    document.getElementById('inputArea').style.display = 'flex';
+    document.getElementById('voiceInputArea').classList.remove('active');
+  } else {
+    document.getElementById('inputArea').style.display = 'none';
+    document.getElementById('voiceInputArea').classList.add('active');
+    document.getElementById('micLabel').textContent = '按住说话';
+    var btns = document.getElementById('voiceSwitchBtns');
+    btns.innerHTML = '<button class="btn btn-secondary btn-sm" onclick="switchInputMode(\'typing\')">⌨️ 切换打字</button> <button class="btn btn-secondary btn-sm" onclick="switchPracticeMode(\'readalong\')">🗣️ 跟读</button>';
+  }
+}
+
+function showModeToggle() {
+  document.getElementById('modeToggle').style.display = 'flex';
+}
+
+function hideModeToggle() {
+  document.getElementById('modeToggle').style.display = 'none';
+}
+
+/* ========== READALONG MODE ========== */
+function generateReadalongSentence() {
+  var area = document.getElementById('chatArea');
+  var loadingHtml = '<div class="readalong-card" id="readalongLoading"><div class="orig-sentence" style="color:var(--text-secondary)">正在生成跟读句子...</div></div>';
+  area.innerHTML = loadingHtml;
+  var cat = appData.currentScenario ? appData.currentScenario.category : (selectedCategory || '日常生活');
+  var prompt = 'Generate a single English sentence for Chinese English learners to practice pronunciation. Requirements:\n1. From ' + cat + ' scenario\n2. 8-15 words long\n3. Contains 1-2 sounds Chinese speakers often mispronounce (th, v/w, l/r, etc)\n4. Output ONLY the English sentence, nothing else';
+  var msgs = [
+    { role: 'system', content: 'You generate a single English sentence for pronunciation practice. Output ONLY the English sentence, nothing else.' },
+    { role: 'user', content: prompt }
+  ];
+  callDeepSeek(msgs, function(response) {
+    var el = document.getElementById('readalongLoading');
+    if (el) el.remove();
+    if (response) {
+      var sentence = response.trim().replace(/^[\s\S]*?([A-Z][^.!?]*[.!?])[\s\S]*$/, '$1');
+      if (!sentence || sentence.length < 5) sentence = response.trim();
+      readalongSentence = sentence;
+      renderReadalongCard(sentence);
+    } else {
+      showToast('生成句子失败，请重试');
+    }
+  });
+}
+
+function renderReadalongCard(sentence) {
+  var area = document.getElementById('chatArea');
+  var cardHtml = '<div class="readalong-card" id="readalongCard">' +
+    '<div class="orig-sentence" id="readalongOrig">' + escapeHtml(sentence) + '</div>' +
+    '<div class="card-actions">' +
+      '<button onclick="speakReadalong()">🔊 播放</button>' +
+      '<button onclick="generateReadalongSentence()">🔄 换一句</button>' +
+    '</div>' +
+  '</div>' +
+  '<div id="readalongResult"></div>';
+  area.innerHTML = cardHtml;
+  scrollToBottom();
+}
+
+function speakReadalong() {
+  if (speechSynthesis.speaking) { speechSynthesis.cancel(); return; }
+  warmUpVoices();
+  var text = readalongSentence.replace(/[^a-zA-Z\s\',.?!-]/g, ' ').replace(/\s+/g, ' ').trim();
+  if (!text) { showToast('没有可朗读的内容'); return; }
+  var utterance = new SpeechSynthesisUtterance(text);
+  utterance.lang = 'en-US';
+  utterance.rate = 0.8;
+  utterance.volume = 1;
+  if (enVoice) utterance.voice = enVoice;
+  speechSynthesis.speak(utterance);
+}
+
+function diffWords(original, spoken) {
+  var origWords = original.toLowerCase().replace(/[^a-z\s']/g, '').split(/\s+/).filter(function(w){ return w.length > 0; });
+  var spokeWords = spoken.toLowerCase().replace(/[^a-z\s']/g, '').split(/\s+/).filter(function(w){ return w.length > 0; });
+  var result = [];
+  var maxLen = Math.max(origWords.length, spokeWords.length);
+  for (var i = 0; i < maxLen; i++) {
+    if (i < origWords.length && i < spokeWords.length) {
+      if (origWords[i] === spokeWords[i]) {
+        result.push({ word: spokeWords[i], match: true });
+      } else {
+        result.push({ word: spokeWords[i], match: false, expected: origWords[i] });
+      }
+    } else if (i < origWords.length) {
+      result.push({ word: '(缺失)', match: false, expected: origWords[i], missing: true });
+    } else {
+      result.push({ word: spokeWords[i], match: false, extra: true });
+    }
+  }
+  return result;
+}
+
+function showReadalongResult(original, spoken) {
+  readalongSpoken = spoken;
+  var diffs = diffWords(original, spoken);
+  var matchCount = 0;
+  var diffHtml = '';
+  for (var i = 0; i < diffs.length; i++) {
+    var d = diffs[i];
+    if (d.match) {
+      matchCount++;
+      diffHtml += '<span class="diff-word match">' + escapeHtml(d.word) + '</span> ';
+    } else if (d.missing) {
+      diffHtml += '<span class="diff-word missing">' + escapeHtml(d.expected) + '</span> ';
+    } else {
+      var title = d.expected ? ' title="应读: ' + escapeHtml(d.expected) + '"' : '';
+      diffHtml += '<span class="diff-word mismatch"' + title + '>' + escapeHtml(d.word) + '</span> ';
+    }
+  }
+  var accuracy = diffs.length > 0 ? Math.round(matchCount / diffs.length * 100) : 0;
+  var statusIcon = accuracy >= 90 ? '✅' : (accuracy >= 60 ? '🟡' : '⚠️');
+  var statusText = accuracy >= 90 ? '发音准确！' : (accuracy >= 60 ? '还需要练习' : '差异较大，多试几次');
+  var resultHtml = '<div class="read-result">' +
+    '<div class="card-title">🗣️ 你的跟读</div>' +
+    '<div class="original">' + diffHtml + '</div>' +
+    '<div class="accuracy">' + statusIcon + ' 准确度：' + accuracy + '% ' + statusText + '</div>' +
+  '</div>';
+  var resultArea = document.getElementById('readalongResult');
+  if (resultArea) resultArea.innerHTML = resultHtml;
+  requestPronAdvice(original, spoken, accuracy);
+  scrollToBottom();
+}
+
+function requestPronAdvice(original, spoken, accuracy) {
+  var adviceId = 'pronAdvice_' + Date.now();
+  var area = document.getElementById('readalongResult');
+  area.innerHTML += '<div class="pron-advice" id="' + adviceId + '"><div class="advice-title">🧠 发音建议</div><div style="color:var(--text-secondary)">分析中...</div></div>';
+  scrollToBottom();
+  var advicePrompt = '【跟读模式额外指令】\n用户正在进行跟读练习。原句和用户跟读识别结果如下：\n原句：' + original + '\n跟读：' + spoken + '\n\n请分析：\n1. 识别出的差异词，可能是什么发音问题导致的（不要说"可能是识别误差"，默认认为是发音问题）\n2. 针对每个错误词，给出具体的发音纠正建议：\n   - 国际音标\n   - 中文母语者容易犯的错误\n   - 嘴巴/舌头/气息的位置建议\n3. 如果整体节奏/语调有问题，也给出建议\n\n输出格式：\n🎯 准确度：' + accuracy + '%\n🔤 发音纠正：\n- [错误词] → 应读 [正确音标]\n  常见问题：[中文母语者容易怎么读错]\n  纠正方法：[嘴巴/舌头怎么做]\n💡 整体建议：[1-2句节奏/语调建议]';
+  var msgs = [
+    { role: 'system', content: SYSTEM_PROMPT },
+    { role: 'user', content: advicePrompt }
+  ];
+  callDeepSeek(msgs, function(response) {
+    var el = document.getElementById(adviceId);
+    if (el && response) {
+      el.innerHTML = '<div class="advice-title">🧠 发音建议</div>' + formatFeedback(response);
+    } else if (el) {
+      el.innerHTML = '<div class="advice-title">🧠 发音建议</div><div style="color:var(--text-secondary)">分析失败，请重试</div>';
+    }
+    scrollToBottom();
+  });
+}
+
+/* ========== VOICE DIALOG MODE ========== */
+function initVoiceRecognition() {
+  var SpeechRecognition = window.SpeechRecognition || window.webkitSpeechRecognition;
+  if (!SpeechRecognition) { return null; }
+  var rec = new SpeechRecognition();
+  rec.interimResults = true;
+  rec.continuous = false;
+  rec.maxAlternatives = 1;
+  rec.lang = appData.settings.speechLang || 'en-US';
+  var finalTranscript = '';
+  rec.onresult = function(event) {
+    finalTranscript = '';
+    var interimTranscript = '';
+    for (var i = 0; i < event.results.length; i++) {
+      if (event.results[i].isFinal) {
+        finalTranscript += event.results[i][0].transcript;
+      } else {
+        interimTranscript += event.results[i][0].transcript;
+      }
+    }
+    var statusEl = document.getElementById('recStatusText');
+    if (statusEl) statusEl.textContent = interimTranscript || finalTranscript || '识别中...';
+  };
+  rec.onend = function() {
+    isVoiceRecording = false;
+    var bigBtn = document.getElementById('bigMicBtn');
+    bigBtn.classList.remove('recording');
+    document.getElementById('bigMicIcon').textContent = '🎤';
+    document.getElementById('recStatus').classList.remove('active');
+    document.getElementById('micLabel').textContent = practiceMode === 'readalong' ? '按住跟读' : '按住说话';
+    if (finalTranscript.trim()) {
+      if (practiceMode === 'readalong') {
+        showReadalongResult(readalongSentence, finalTranscript.trim());
+      } else {
+        sendVoiceMessage(finalTranscript.trim());
+      }
+    } else {
+      showToast('未能识别到语音，请重试');
+    }
+    finalTranscript = '';
+  };
+  rec.onerror = function(event) {
+    isVoiceRecording = false;
+    var bigBtn = document.getElementById('bigMicBtn');
+    bigBtn.classList.remove('recording');
+    document.getElementById('bigMicIcon').textContent = '🎤';
+    document.getElementById('recStatus').classList.remove('active');
+    document.getElementById('micLabel').textContent = practiceMode === 'readalong' ? '按住跟读' : '按住说话';
+    if (event.error === 'not-allowed') {
+      showToast('请允许麦克风权限，或在手机设置中开启');
+    } else if (event.error === 'network') {
+      showToast('语音识别需要网络连接');
+    } else if (event.error !== 'aborted' && event.error !== 'no-speech') {
+      showToast('语音识别出错：' + event.error);
+    }
+  };
+  return rec;
+}
+
+function startVoiceRecording() {
+  if (isVoiceRecording) return;
+  if (!voiceRecognition) { voiceRecognition = initVoiceRecognition(); }
+  if (!voiceRecognition) { showToast('浏览器不支持语音输入'); return; }
+  if (speechSynthesis.speaking) { speechSynthesis.cancel(); }
+  voiceRecognition.lang = appData.settings.speechLang || 'en-US';
+  try { voiceRecognition.start(); } catch(e) {
+    voiceRecognition.abort();
+    setTimeout(function() { try { voiceRecognition.start(); } catch(e2) {} }, 200);
+    return;
+  }
+  isVoiceRecording = true;
+  var bigBtn = document.getElementById('bigMicBtn');
+  bigBtn.classList.add('recording');
+  document.getElementById('bigMicIcon').textContent = '⏹';
+  document.getElementById('recStatus').classList.add('active');
+  document.getElementById('recStatusText').textContent = '正在听...';
+  document.getElementById('micLabel').textContent = '松开结束';
+}
+
+function stopVoiceRecording() {
+  if (!isVoiceRecording || !voiceRecognition) return;
+  try { voiceRecognition.stop(); } catch(e) {}
+  document.getElementById('recStatusText').textContent = '识别中...';
+  document.getElementById('micLabel').textContent = '识别中...';
+}
+
+function setupBigMicEvents() {
+  var bigBtn = document.getElementById('bigMicBtn');
+  bigBtn.addEventListener('touchstart', function(e) { e.preventDefault(); startVoiceRecording(); }, { passive: false });
+  bigBtn.addEventListener('touchend', function(e) { e.preventDefault(); stopVoiceRecording(); }, { passive: false });
+  bigBtn.addEventListener('touchcancel', function(e) { e.preventDefault(); stopVoiceRecording(); }, { passive: false });
+  bigBtn.addEventListener('mousedown', function(e) { e.preventDefault(); startVoiceRecording(); });
+  bigBtn.addEventListener('mouseup', function(e) { e.preventDefault(); stopVoiceRecording(); });
+  bigBtn.addEventListener('mouseleave', function() { if (isVoiceRecording) stopVoiceRecording(); });
+}
+
+function sendVoiceMessage(text) {
+  if (!text || !appData.currentScenario) return;
+  addChatBubble('user', text);
+  appData.currentScenario.messages.push({ role:'user', content: text });
+  saveData(appData);
+  showTyping();
+  var msgs = [{ role: 'system', content: SYSTEM_PROMPT }];
+  var sceneMsgs = appData.currentScenario.messages;
+  for (var i = 0; i < sceneMsgs.length; i++) {
+    var m = sceneMsgs[i];
+    if (m.role === 'scene') continue;
+    if (m.role === 'ai') { msgs.push({ role: 'assistant', content: m.content }); }
+    else if (m.role === 'user') { msgs.push({ role: 'user', content: m.content }); }
+  }
+  callDeepSeek(msgs, function(response) {
+    hideTyping();
+    if (response) {
+      addChatBubble('feedback', response);
+      appData.currentScenario.messages.push({ role:'feedback', content: response });
+      saveData(appData);
+      parseFeedback(response);
+      document.getElementById('newScenarioArea').style.display = 'block';
+      recordStudyDay();
+      if (appData.settings.autoRead !== false) { autoSpeakReply(response); }
+    }
+  });
+}
+
+function autoSpeakReply(response) {
+  if (speechSynthesis.speaking) speechSynthesis.cancel();
+  warmUpVoices();
+  var lines = response.split('\n');
+  var speakText = '';
+  for (var i = 0; i < lines.length; i++) {
+    if (lines[i].indexOf('💬') >= 0) {
+      speakText = lines[i].replace(/^💬\s*/, '').trim();
+      break;
+    }
+  }
+  if (!speakText) {
+    var text = response;
+    text = text.replace(/[✅🔧🌐💡💬📍📖🎯🔤]/g, '');
+    text = text.replace(/[\u4e00-\u9fff\u3000-\u303f\uff00-\uffef]/g, ' ');
+    text = text.replace(/[\ud800-\udbff][\udc00-\udfff]/g, '');
+    text = text.replace(/[（(][^）)]*[）)]/g, '');
+    text = text.replace(/[→❌✨]/g, ' ');
+    text = text.replace(/\s+/g, ' ').trim();
+    speakText = text;
+  }
+  speakText = speakText.replace(/[✅🔧🌐💡💬📍📖🎯🔤→❌✨]/g, ' ').replace(/\s+/g, ' ').trim();
+  if (!speakText) return;
+  var utterance = new SpeechSynthesisUtterance(speakText);
+  utterance.lang = 'en-US';
+  utterance.rate = appData.settings.voiceRate || 0.9;
+  utterance.volume = 1;
+  if (enVoice) utterance.voice = enVoice;
+  speechSynthesis.speak(utterance);
+}
+
+function setAutoRead(val) {
+  appData.settings.autoRead = val;
+  saveData(appData);
+  document.getElementById('autoReadOn').classList.toggle('active', val === true);
+  document.getElementById('autoReadOff').classList.toggle('active', val === false);
+  showToast(val ? '已开启自动朗读' : '已关闭自动朗读');
+}
 /* ========== INIT ========== */
 function init() {
   /* Restore current scenario if exists */
@@ -1490,6 +1935,7 @@ function init() {
     if (currentTab === 'practice') {
       document.getElementById('inputArea').style.display = 'flex';
     }
+    showModeToggle();
   }
   /* Update stats */
   appData.stats.totalWords = appData.vocabulary.length;
@@ -1501,6 +1947,8 @@ function init() {
   if (window.speechSynthesis) { warmUpVoices(); }
   /* Initialize speech recognition */
   initSpeechRecognition();
+  /* Setup big mic button for voice mode */
+  setupBigMicEvents();
   /* Restore speech language setting */
   var savedLang = appData.settings.speechLang || 'en-US';
   document.getElementById('langEn').classList.toggle('active', savedLang === 'en-US');
