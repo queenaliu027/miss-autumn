@@ -1,0 +1,271 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+<title>Miss Autumn</title>
+<meta name="theme-color" content="#0a0a1a">
+<style>
+:root {
+  --bg: #0a0a1a; --bg-card: #141428; --bg-input: #1e1e3a; --bg-hover: #252550;
+  --text: #e8e8f4; --text-secondary: #8888aa; --text-tertiary: #555570;
+  --accent: #00d2d3; --accent-light: #55efc4; --accent-bg: rgba(0,210,211,0.12);
+  --accent2: #a29bfe; --accent2-bg: rgba(162,155,254,0.12);
+  --warn: #ff6b6b; --warn-bg: rgba(255,107,107,0.12);
+  --success: #00b894; --success-bg: rgba(0,184,148,0.12);
+  --border: #2a2a4a; --radius: 16px; --radius-sm: 10px;
+  --gradient: linear-gradient(135deg, #00d2d3, #55efc4);
+}
+* { margin: 0; padding: 0; box-sizing: border-box; }
+html, body { height: 100%; overflow: hidden; }
+body {
+  font-family: -apple-system, BlinkMacSystemFont, 'SF Pro Text', 'PingFang SC', 'Hiragino Sans GB', 'Microsoft YaHei', sans-serif;
+  background: var(--bg); color: var(--text); -webkit-font-smoothing: antialiased;
+}
+.app { height: 100%; display: flex; flex-direction: column; max-width: 420px; margin: 0 auto; }
+
+/* Status bar */
+.status-bar { display: flex; justify-content: space-between; align-items: center; padding: 10px 20px 4px; font-size: 14px; font-weight: 600; flex-shrink: 0; }
+.status-icons { display: flex; gap: 4px; align-items: center; font-size: 12px; }
+
+/* Header */
+.page-header { padding: 10px 20px 12px; display: flex; justify-content: space-between; align-items: center; flex-shrink: 0; }
+.page-title { font-size: 22px; font-weight: 700; background: var(--gradient); -webkit-background-clip: text; -webkit-text-fill-color: transparent; }
+.month-select { font-size: 12px; color: var(--text-secondary); padding: 4px 12px; border: 1px solid var(--border); border-radius: 20px; background: transparent; }
+
+/* Scrollable content */
+.content { flex: 1; overflow-y: auto; overflow-x: hidden; padding: 0 16px 80px; -webkit-overflow-scrolling: touch; scrollbar-width: none; }
+.content::-webkit-scrollbar { display: none; }
+
+/* Hero */
+.hero { padding: 20px; background: var(--bg-card); border-radius: var(--radius); border: 1px solid var(--border); margin-bottom: 16px; }
+.hero-label { font-size: 12px; color: var(--text-secondary); margin-bottom: 4px; }
+.hero-amount { font-size: 34px; font-weight: 700; margin-bottom: 2px; }
+.hero-sub { font-size: 13px; color: var(--text-secondary); margin-bottom: 14px; }
+.hero-grid { display: flex; gap: 10px; }
+.hero-stat { flex: 1; padding: 10px; background: rgba(255,255,255,0.03); border-radius: var(--radius-sm); }
+.hero-stat .label { font-size: 11px; color: var(--text-secondary); margin-bottom: 2px; }
+.hero-stat .value { font-size: 16px; font-weight: 600; }
+.hero-stat .value.orange { color: #fdcb6e; }
+.hero-stat .value.purple { color: #a29bfe; }
+.hero-stat .value.green { color: #55efc4; }
+
+/* Section */
+.section-header { display: flex; align-items: center; gap: 8px; padding: 14px 4px 8px; }
+.section-title { font-size: 15px; font-weight: 600; }
+.section-tag { font-size: 10px; padding: 2px 8px; border-radius: 10px; font-weight: 500; }
+.tag-spend { background: rgba(225,112,85,0.12); color: #e17055; }
+.tag-invest { background: rgba(108,92,231,0.12); color: #6c5ce7; }
+
+/* Envelope card */
+.env-card { padding: 14px 16px; background: var(--bg-card); border-radius: var(--radius); border: 1px solid var(--border); margin-bottom: 8px; }
+.env-row { display: flex; justify-content: space-between; align-items: center; }
+.env-left { display: flex; align-items: center; gap: 10px; }
+.env-icon { width: 34px; height: 34px; border-radius: 9px; display: flex; align-items: center; justify-content: center; font-size: 17px; }
+.env-name { font-size: 14px; font-weight: 500; }
+.env-right { text-align: right; }
+.env-budget { font-size: 11px; color: var(--text-secondary); }
+.env-amount { font-size: 16px; font-weight: 600; }
+.env-bar { height: 5px; border-radius: 3px; background: rgba(255,255,255,0.06); margin-top: 10px; overflow: hidden; }
+.env-fill { height: 100%; border-radius: 3px; }
+.env-footer { display: flex; justify-content: space-between; margin-top: 6px; font-size: 11px; color: var(--text-secondary); }
+.env-footer .remain { font-weight: 600; }
+
+/* Icon colors */
+.ic-fixed { background: rgba(225,112,85,0.15); }
+.ic-living { background: rgba(253,203,110,0.15); }
+.ic-growth { background: rgba(231,127,103,0.15); }
+.ic-health { background: rgba(248,165,194,0.15); }
+.ic-finance { background: rgba(108,92,231,0.15); }
+
+/* Bar colors */
+.bf-fixed { background: #e17055; }
+.bf-living { background: #fdcb6e; }
+.bf-growth { background: #e77f67; }
+.bf-health { background: #f8a5c2; }
+.bf-finance { background: #6c5ce7; }
+
+/* Bottom nav */
+.bottom-nav { position: fixed; bottom: 0; left: 50%; transform: translateX(-50%); width: 100%; max-width: 420px; display: flex; justify-content: space-around; padding: 8px 0 24px; background: var(--bg); border-top: 1px solid var(--border); }
+.nav-item { display: flex; flex-direction: column; align-items: center; gap: 2px; font-size: 10px; color: var(--text-tertiary); }
+.nav-item.active { color: var(--accent); }
+.nav-icon { font-size: 20px; }
+
+/* Month summary */
+.summary-card { padding: 16px; background: var(--bg-card); border-radius: var(--radius); border: 1px solid var(--border); margin-top: 16px; }
+.summary-title { font-size: 14px; font-weight: 600; margin-bottom: 12px; }
+.summary-row { display: flex; justify-content: space-between; padding: 6px 0; font-size: 13px; }
+.summary-row .label { color: var(--text-secondary); }
+.summary-row .value { font-weight: 500; }
+.summary-row.total { border-top: 1px solid var(--border); margin-top: 4px; padding-top: 10px; }
+.summary-row.total .value { color: var(--accent); font-weight: 700; font-size: 15px; }
+</style>
+</head>
+<body>
+<div class="app">
+  <div class="status-bar">
+    <span>9:41</span>
+    <span class="status-icons">📶 📡 🔋</span>
+  </div>
+
+  <div class="page-header">
+    <div class="page-title">💰 财富看板</div>
+    <div class="month-select">2026年5月 ▾</div>
+  </div>
+
+  <div class="content">
+    <!-- Hero -->
+    <div class="hero">
+      <div class="hero-label">本月净结余</div>
+      <div class="hero-amount">¥1,450</div>
+      <div class="hero-sub">/ ¥10,000 收入</div>
+      <div class="hero-grid">
+        <div class="hero-stat">
+          <div class="label">消费信封余额</div>
+          <div class="value orange">¥1,450</div>
+        </div>
+        <div class="hero-stat">
+          <div class="label">投资信封余额</div>
+          <div class="value purple">¥1,500</div>
+        </div>
+        <div class="hero-stat">
+          <div class="label">本月收入</div>
+          <div class="value green">¥10,000</div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Spending envelopes -->
+    <div class="section-header">
+      <span class="section-title">🟠 消费信封</span>
+      <span class="section-tag tag-spend">预算 ¥7,500</span>
+    </div>
+
+    <div class="env-card">
+      <div class="env-row">
+        <div class="env-left">
+          <div class="env-icon ic-fixed">🏠</div>
+          <div class="env-name">固定支出</div>
+        </div>
+        <div class="env-right">
+          <div class="env-budget">预算 ¥5,000</div>
+          <div class="env-amount">¥5,000</div>
+        </div>
+      </div>
+      <div class="env-bar"><div class="env-fill bf-fixed" style="width:100%"></div></div>
+      <div class="env-footer">
+        <span>已用 100%</span>
+        <span class="remain" style="color:#e17055">剩余 ¥0</span>
+      </div>
+    </div>
+
+    <div class="env-card">
+      <div class="env-row">
+        <div class="env-left">
+          <div class="env-icon ic-living">🍜</div>
+          <div class="env-name">生活费</div>
+        </div>
+        <div class="env-right">
+          <div class="env-budget">预算 ¥1,500</div>
+          <div class="env-amount">¥850</div>
+        </div>
+      </div>
+      <div class="env-bar"><div class="env-fill bf-living" style="width:57%"></div></div>
+      <div class="env-footer">
+        <span>已用 57%</span>
+        <span class="remain" style="color:#fdcb6e">剩余 ¥650</span>
+      </div>
+    </div>
+
+    <div class="env-card">
+      <div class="env-row">
+        <div class="env-left">
+          <div class="env-icon ic-growth">📚</div>
+          <div class="env-name">成长学习</div>
+        </div>
+        <div class="env-right">
+          <div class="env-budget">预算 ¥500</div>
+          <div class="env-amount">¥300</div>
+        </div>
+      </div>
+      <div class="env-bar"><div class="env-fill bf-growth" style="width:60%"></div></div>
+      <div class="env-footer">
+        <span>已用 60%</span>
+        <span class="remain" style="color:#e77f67">剩余 ¥200</span>
+      </div>
+    </div>
+
+    <div class="env-card">
+      <div class="env-row">
+        <div class="env-left">
+          <div class="env-icon ic-health">🏃</div>
+          <div class="env-name">健康投资</div>
+        </div>
+        <div class="env-right">
+          <div class="env-budget">预算 ¥500</div>
+          <div class="env-amount">¥250</div>
+        </div>
+      </div>
+      <div class="env-bar"><div class="env-fill bf-health" style="width:50%"></div></div>
+      <div class="env-footer">
+        <span>已用 50%</span>
+        <span class="remain" style="color:#f8a5c2">剩余 ¥250</span>
+      </div>
+    </div>
+
+    <!-- Investing envelopes -->
+    <div class="section-header">
+      <span class="section-title">🟣 投资信封</span>
+      <span class="section-tag tag-invest">预算 ¥1,500</span>
+    </div>
+
+    <div class="env-card">
+      <div class="env-row">
+        <div class="env-left">
+          <div class="env-icon ic-finance">📈</div>
+          <div class="env-name">理财投资</div>
+        </div>
+        <div class="env-right">
+          <div class="env-budget">预算 ¥1,500</div>
+          <div class="env-amount" style="color:#a29bfe">¥1,500</div>
+        </div>
+      </div>
+      <div class="env-bar"><div class="env-fill bf-finance" style="width:100%"></div></div>
+      <div class="env-footer">
+        <span>已投入 100% 💡 投资不算消费</span>
+        <span class="remain" style="color:#6c5ce7">资产搬家 ✓</span>
+      </div>
+    </div>
+
+    <!-- Monthly summary -->
+    <div class="summary-card">
+      <div class="summary-title">📊 本月总结</div>
+      <div class="summary-row">
+        <span class="label">收入</span>
+        <span class="value" style="color:#55efc4">¥10,000</span>
+      </div>
+      <div class="summary-row">
+        <span class="label">消费</span>
+        <span class="value" style="color:#fdcb6e">¥6,400</span>
+      </div>
+      <div class="summary-row">
+        <span class="label">投资</span>
+        <span class="value" style="color:#a29bfe">¥1,500</span>
+      </div>
+      <div class="summary-row total">
+        <span class="label">结余</span>
+        <span class="value">¥2,100</span>
+      </div>
+    </div>
+  </div>
+
+  <!-- Bottom nav -->
+  <div class="bottom-nav">
+    <div class="nav-item active"><div class="nav-icon">📊</div>概览</div>
+    <div class="nav-item"><div class="nav-icon">✏️</div>记账</div>
+    <div class="nav-item"><div class="nav-icon">📋</div>明细</div>
+    <div class="nav-item"><div class="nav-icon">⚙️</div>设置</div>
+  </div>
+</div>
+</body>
+</html>
