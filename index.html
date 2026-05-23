@@ -365,9 +365,9 @@ body { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', 'PingFang SC'
     <div class="page" id="page-stats">
       <div class="page-header"><div>📊 统计</div></div>
       <div class="period-tabs">
-        <button class="period-tab active" onclick="setStatPeriod('month',this)">本月</button>
-        <button class="period-tab" onclick="setStatPeriod('year',this)">今年</button>
-        <button class="period-tab" onclick="setStatPeriod('all',this)">全部</button>
+        <button class="period-tab active" onclick="setStatPeriod('month',this)">月度</button>
+        <button class="period-tab" onclick="setStatPeriod('quarter',this)">季度</button>
+        <button class="period-tab" onclick="setStatPeriod('year',this)">年度</button>
       </div>
       <div class="stat-sub-tabs">
         <button class="stat-sub-tab active" onclick="setStatSubTab('charts',this)">图表分析</button>
@@ -380,6 +380,7 @@ body { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', 'PingFang SC'
           <div class="stat-card"><div class="label">投资</div><div class="value invest" id="statInvest">¥0</div></div>
           <div class="stat-card"><div class="label">结余</div><div class="value" id="statSurplus">¥0</div></div>
         </div>
+        <div id="statCompareSection"></div>
         <div class="chart-container"><div class="card-title">📉 消费分类占比</div><canvas id="expenseChart"></canvas></div>
         <div class="chart-container"><div class="card-title">📈 收支趋势</div><canvas id="trendChart"></canvas></div>
       </div>
@@ -427,7 +428,7 @@ body { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', 'PingFang SC'
         <input type="file" id="importFile" accept=".json" style="display:none" onchange="importData(event)">
         <div class="setting-item" onclick="clearAllData()"><div class="left"><span class="icon">🗑️</span><span class="label">清空数据</span></div><div class="right" style="color:var(--expense)"><span>危险操作</span></div></div>
       </div>
-      <div style="text-align:center;padding:20px;color:var(--text-tertiary);font-size:12px">Miss Autumn的记账本 v6.0 · 信封预算模型 · 数据仅存储在本地</div>
+      <div style="text-align:center;padding:20px;color:var(--text-tertiary);font-size:12px">Miss Autumn的记账本 v7.0 · 信封预算模型 · 月度/季度/年度对比 · 数据仅存储在本地</div>
     </div>
   </div>
   <div class="tab-bar">
@@ -864,15 +865,63 @@ function toggleVoice() { if (isRecording) { if (recognition) { recognition.stop(
 function setStatPeriod(p, btn) { currentStatPeriod = p; document.querySelectorAll('.period-tab').forEach(t => t.classList.remove('active')); btn.classList.add('active'); renderStats(); }
 function setStatSubTab(tab, btn) { currentStatSubTab = tab; document.querySelectorAll('.stat-sub-tab').forEach(t => t.classList.remove('active')); btn.classList.add('active'); document.getElementById('statChartsSection').style.display = tab === 'charts' ? 'block' : 'none'; document.getElementById('statBudgetSection').style.display = tab === 'budget' ? 'block' : 'none'; if (tab === 'budget') renderBudgetAnalysis(); }
 
+function getStatPeriodRange(period) {
+  const now = new Date();
+  if (period === 'month') {
+    const s = `${now.getFullYear()}-${String(now.getMonth()+1).padStart(2,'0')}-01`;
+    const ed = new Date(now.getFullYear(), now.getMonth()+1, 0);
+    const e = `${ed.getFullYear()}-${String(ed.getMonth()+1).padStart(2,'0')}-${String(ed.getDate()).padStart(2,'0')}`;
+    return { start: s, end: e };
+  } else if (period === 'quarter') {
+    const cq = Math.floor(now.getMonth()/3);
+    const qm = cq * 3;
+    const s = `${now.getFullYear()}-${String(qm+1).padStart(2,'0')}-01`;
+    const ed = new Date(now.getFullYear(), qm+3, 0);
+    const e = `${ed.getFullYear()}-${String(ed.getMonth()+1).padStart(2,'0')}-${String(ed.getDate()).padStart(2,'0')}`;
+    return { start: s, end: e };
+  } else {
+    return { start: `${now.getFullYear()}-01-01`, end: `${now.getFullYear()}-12-31` };
+  }
+}
+function getStatPrevPeriodRange(period) {
+  const now = new Date();
+  if (period === 'month') {
+    const pm = new Date(now.getFullYear(), now.getMonth()-1, 1);
+    const s = `${pm.getFullYear()}-${String(pm.getMonth()+1).padStart(2,'0')}-01`;
+    const ed = new Date(pm.getFullYear(), pm.getMonth()+1, 0);
+    const e = `${ed.getFullYear()}-${String(ed.getMonth()+1).padStart(2,'0')}-${String(ed.getDate()).padStart(2,'0')}`;
+    return { start: s, end: e };
+  } else if (period === 'quarter') {
+    const cq = Math.floor(now.getMonth()/3);
+    let pq = cq - 1, y = now.getFullYear();
+    if (pq < 0) { pq = 3; y--; }
+    const qm = pq * 3;
+    const s = `${y}-${String(qm+1).padStart(2,'0')}-01`;
+    const ed = new Date(y, qm+3, 0);
+    const e = `${ed.getFullYear()}-${String(ed.getMonth()+1).padStart(2,'0')}-${String(ed.getDate()).padStart(2,'0')}`;
+    return { start: s, end: e };
+  } else {
+    const py = now.getFullYear() - 1;
+    return { start: `${py}-01-01`, end: `${py}-12-31` };
+  }
+}
 function renderStats() {
-  const now = new Date(); let f;
-  if (currentStatPeriod === 'month') { const s = `${now.getFullYear()}-${String(now.getMonth()+1).padStart(2,'0')}-01`; f = state.transactions.filter(t => t.date >= s); }
-  else if (currentStatPeriod === 'year') { f = state.transactions.filter(t => t.date >= `${now.getFullYear()}-01-01`); }
-  else f = [...state.transactions];
+  const cr = getStatPeriodRange(currentStatPeriod);
+  const f = state.transactions.filter(t => t.date >= cr.start && t.date <= cr.end);
   const inc = f.filter(t => t.type === 'income').reduce((s,t) => s + t.amount, 0);
   const spd = getMonthSpending(f), inv = getMonthInvest(f), sur = inc - spd - inv;
   document.getElementById('statIncome').textContent = formatMoney(inc); document.getElementById('statSpending').textContent = formatMoney(spd); document.getElementById('statInvest').textContent = formatMoney(inv);
   const se = document.getElementById('statSurplus'); se.textContent = (sur >= 0 ? '+' : '-') + formatMoney(Math.abs(sur)); se.className = 'value ' + (sur >= 0 ? 'net-positive' : 'net-negative');
+  // Comparison section
+  const pr = getStatPrevPeriodRange(currentStatPeriod);
+  const pf = state.transactions.filter(t => t.date >= pr.start && t.date <= pr.end);
+  const pInc = pf.filter(t => t.type === 'income').reduce((s,t) => s + t.amount, 0);
+  const pSpd = getMonthSpending(pf), pInv = getMonthInvest(pf), pSur = pInc - pSpd - pInv;
+  const pnl = currentStatPeriod === 'month' ? '上月' : (currentStatPeriod === 'quarter' ? '上季度' : '去年');
+  function cc(c,p) { if (p===0) return c>0?100:(c<0?-100:0); return ((c-p)/Math.abs(p)*100).toFixed(1); }
+  function ct(v) { if (Math.abs(v)<0.1) return '<span class="wc-change neutral">持平</span>'; return v>0?`<span class="wc-change up">↑${Math.abs(v)}%</span>`:`<span class="wc-change down">↓${Math.abs(v)}%</span>`; }
+  const ce = document.getElementById('statCompareSection');
+  ce.innerHTML = `<div class="wealth-compare-card"><div><div class="wc-label">收入 vs ${pnl}</div><div style="font-size:12px;color:var(--text-tertiary)">${pnl} ${formatMoney(pInc)}</div></div><div style="display:flex;align-items:center"><span class="wc-value income">${formatMoney(inc)}</span>${ct(cc(inc,pInc))}</div></div><div class="wealth-compare-card"><div><div class="wc-label">消费 vs ${pnl}</div><div style="font-size:12px;color:var(--text-tertiary)">${pnl} ${formatMoney(pSpd)}</div></div><div style="display:flex;align-items:center"><span class="wc-value expense">${formatMoney(spd)}</span>${ct(cc(spd,pSpd))}</div></div><div class="wealth-compare-card"><div><div class="wc-label">投资 vs ${pnl}</div><div style="font-size:12px;color:var(--text-tertiary)">${pnl} ${formatMoney(pInv)}</div></div><div style="display:flex;align-items:center"><span class="wc-value" style="color:var(--invest-color)">${formatMoney(inv)}</span>${ct(cc(inv,pInv))}</div></div><div class="wealth-compare-card"><div><div class="wc-label">净结余 vs ${pnl}</div><div style="font-size:12px;color:var(--text-tertiary)">${pnl} ${formatMoney(pSur)}</div></div><div style="display:flex;align-items:center"><span class="wc-value ${sur>=0?'income':'expense'}">${sur>=0?'+':'-'}${formatMoney(Math.abs(sur))}</span>${ct(cc(sur,pSur))}</div></div>`;
   renderExpenseChart(f); renderTrendChart(f);
   if (currentStatSubTab === 'budget') renderBudgetAnalysis();
   renderTxList('allTx', [...f].sort((a,b) => b.date !== a.date ? b.date.localeCompare(a.date) : (b.createdAt||0) - (a.createdAt||0)));
@@ -900,8 +949,9 @@ function renderExpenseChart(txs) {
 
 function renderTrendChart(txs) {
   const now = new Date(); let labels = [], incD = [], spdD = [], invD = [];
-  if (currentStatPeriod !== 'month') { const ms = {}; txs.forEach(t => { const m = t.date.substring(0,7); if (!ms[m]) ms[m] = { income: 0, spending: 0, invest: 0 }; if (t.type === 'income') ms[m].income += t.amount; if (t.type === 'expense') { if (getEnvelopeInfo(t.envelope).type === 'spending') ms[m].spending += t.amount; else ms[m].invest += t.amount; } }); const sorted = Object.keys(ms).sort(); labels = sorted.map(m => m.substring(5)); incD = sorted.map(m => ms[m].income); spdD = sorted.map(m => ms[m].spending); invD = sorted.map(m => ms[m].invest); }
-  else { for (let i = 29; i >= 0; i--) { const d = new Date(now); d.setDate(d.getDate()-i); const ds = d.toISOString().split('T')[0]; labels.push(`${d.getMonth()+1}/${d.getDate()}`); const dt = txs.filter(t => t.date === ds); incD.push(dt.filter(t => t.type === 'income').reduce((s,t) => s + t.amount, 0)); spdD.push(dt.filter(t => t.type === 'expense' && getEnvelopeInfo(t.envelope).type === 'spending').reduce((s,t) => s + t.amount, 0)); invD.push(dt.filter(t => t.type === 'expense' && getEnvelopeInfo(t.envelope).type === 'investing').reduce((s,t) => s + t.amount, 0)); } }
+  if (currentStatPeriod === 'month') { for (let i = 29; i >= 0; i--) { const d = new Date(now); d.setDate(d.getDate()-i); const ds = d.toISOString().split('T')[0]; labels.push(`${d.getMonth()+1}/${d.getDate()}`); const dt = txs.filter(t => t.date === ds); incD.push(dt.filter(t => t.type === 'income').reduce((s,t) => s + t.amount, 0)); spdD.push(dt.filter(t => t.type === 'expense' && getEnvelopeInfo(t.envelope).type === 'spending').reduce((s,t) => s + t.amount, 0)); invD.push(dt.filter(t => t.type === 'expense' && getEnvelopeInfo(t.envelope).type === 'investing').reduce((s,t) => s + t.amount, 0)); } }
+  else if (currentStatPeriod === 'quarter') { const ms = {}; txs.forEach(t => { const m = t.date.substring(0,7); if (!ms[m]) ms[m] = { income: 0, spending: 0, invest: 0 }; if (t.type === 'income') ms[m].income += t.amount; if (t.type === 'expense') { if (getEnvelopeInfo(t.envelope).type === 'spending') ms[m].spending += t.amount; else ms[m].invest += t.amount; } }); const sorted = Object.keys(ms).sort(); labels = sorted.map(m => m.substring(5)); incD = sorted.map(m => ms[m].income); spdD = sorted.map(m => ms[m].spending); invD = sorted.map(m => ms[m].invest); }
+  else { const ms = {}; txs.forEach(t => { const m = t.date.substring(0,7); if (!ms[m]) ms[m] = { income: 0, spending: 0, invest: 0 }; if (t.type === 'income') ms[m].income += t.amount; if (t.type === 'expense') { if (getEnvelopeInfo(t.envelope).type === 'spending') ms[m].spending += t.amount; else ms[m].invest += t.amount; } }); const sorted = Object.keys(ms).sort(); labels = sorted.map(m => m.substring(5)); incD = sorted.map(m => ms[m].income); spdD = sorted.map(m => ms[m].spending); invD = sorted.map(m => ms[m].invest); }
   const ctx = document.getElementById('trendChart').getContext('2d'); if (trendChart) trendChart.destroy();
   const tc = getComputedStyle(document.documentElement); const ts = tc.getPropertyValue('--text-secondary').trim(), tt = tc.getPropertyValue('--text-tertiary').trim(), bc = tc.getPropertyValue('--border').trim();
   trendChart = new Chart(ctx, { type: 'line', data: { labels, datasets: [ { label: '收入', data: incD, borderColor: '#00b894', backgroundColor: 'rgba(0,184,148,0.1)', fill: true, tension: 0.4, pointRadius: 2, borderWidth: 2 }, { label: '消费', data: spdD, borderColor: '#e17055', backgroundColor: 'rgba(225,112,85,0.1)', fill: true, tension: 0.4, pointRadius: 2, borderWidth: 2 }, { label: '投资', data: invD, borderColor: '#6c5ce7', backgroundColor: 'rgba(108,92,231,0.1)', fill: true, tension: 0.4, pointRadius: 2, borderWidth: 2, borderDash: [5,5] } ] }, options: { responsive: true, plugins: { legend: { labels: { usePointStyle: true, font: { size: 12 }, color: ts } } }, scales: { x: { ticks: { font: { size: 10 }, color: tt, maxTicksLimit: 8 }, grid: { display: false } }, y: { ticks: { font: { size: 10 }, color: tt }, grid: { color: bc } } } } });
