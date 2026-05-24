@@ -428,7 +428,7 @@ body { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', 'PingFang SC'
         <input type="file" id="importFile" accept=".json" style="display:none" onchange="importData(event)">
         <div class="setting-item" onclick="clearAllData()"><div class="left"><span class="icon">🗑️</span><span class="label">清空数据</span></div><div class="right" style="color:var(--expense)"><span>危险操作</span></div></div>
       </div>
-      <div style="text-align:center;padding:20px;color:var(--text-tertiary);font-size:12px">Miss Autumn的记账本 v7.0 · 信封预算模型 · 月度/季度/年度对比 · 数据仅存储在本地</div>
+      <div style="text-align:center;padding:20px;color:var(--text-tertiary);font-size:12px">Miss Autumn的记账本 v7.1 · 信封预算模型 · 历期对比 · 数据仅存储在本地</div>
     </div>
   </div>
   <div class="tab-bar">
@@ -912,16 +912,18 @@ function renderStats() {
   const spd = getMonthSpending(f), inv = getMonthInvest(f), sur = inc - spd - inv;
   document.getElementById('statIncome').textContent = formatMoney(inc); document.getElementById('statSpending').textContent = formatMoney(spd); document.getElementById('statInvest').textContent = formatMoney(inv);
   const se = document.getElementById('statSurplus'); se.textContent = (sur >= 0 ? '+' : '-') + formatMoney(Math.abs(sur)); se.className = 'value ' + (sur >= 0 ? 'net-positive' : 'net-negative');
-  // Comparison section
-  const pr = getStatPrevPeriodRange(currentStatPeriod);
-  const pf = state.transactions.filter(t => t.date >= pr.start && t.date <= pr.end);
-  const pInc = pf.filter(t => t.type === 'income').reduce((s,t) => s + t.amount, 0);
-  const pSpd = getMonthSpending(pf), pInv = getMonthInvest(pf), pSur = pInc - pSpd - pInv;
-  const pnl = currentStatPeriod === 'month' ? '上月' : (currentStatPeriod === 'quarter' ? '上季度' : '去年');
-  function cc(c,p) { if (p===0) return c>0?100:(c<0?-100:0); return ((c-p)/Math.abs(p)*100).toFixed(1); }
-  function ct(v) { if (Math.abs(v)<0.1) return '<span class="wc-change neutral">持平</span>'; return v>0?`<span class="wc-change up">↑${Math.abs(v)}%</span>`:`<span class="wc-change down">↓${Math.abs(v)}%</span>`; }
-  const ce = document.getElementById('statCompareSection');
-  ce.innerHTML = `<div class="wealth-compare-card"><div><div class="wc-label">收入 vs ${pnl}</div><div style="font-size:12px;color:var(--text-tertiary)">${pnl} ${formatMoney(pInc)}</div></div><div style="display:flex;align-items:center"><span class="wc-value income">${formatMoney(inc)}</span>${ct(cc(inc,pInc))}</div></div><div class="wealth-compare-card"><div><div class="wc-label">消费 vs ${pnl}</div><div style="font-size:12px;color:var(--text-tertiary)">${pnl} ${formatMoney(pSpd)}</div></div><div style="display:flex;align-items:center"><span class="wc-value expense">${formatMoney(spd)}</span>${ct(cc(spd,pSpd))}</div></div><div class="wealth-compare-card"><div><div class="wc-label">投资 vs ${pnl}</div><div style="font-size:12px;color:var(--text-tertiary)">${pnl} ${formatMoney(pInv)}</div></div><div style="display:flex;align-items:center"><span class="wc-value" style="color:var(--invest-color)">${formatMoney(inv)}</span>${ct(cc(inv,pInv))}</div></div><div class="wealth-compare-card"><div><div class="wc-label">净结余 vs ${pnl}</div><div style="font-size:12px;color:var(--text-tertiary)">${pnl} ${formatMoney(pSur)}</div></div><div style="display:flex;align-items:center"><span class="wc-value ${sur>=0?'income':'expense'}">${sur>=0?'+':'-'}${formatMoney(Math.abs(sur))}</span>${ct(cc(sur,pSur))}</div></div>`;
+  // Multi-period comparison table
+  const periods = getWealthPeriods(currentStatPeriod);
+  let th = '<div class="section-title" style="margin-top:4px">📊 历期对比</div>';
+  th += '<div style="overflow-x:auto"><table class="budget-analysis-table" style="min-width:420px"><thead><tr><th>期间</th><th>收入</th><th>消费</th><th>投资</th><th>结余</th></tr></thead><tbody>';
+  for (let i = periods.length - 1; i >= 0; i--) {
+    const p = periods[i], d = getPeriodTxData(p.start, p.end);
+    const isCurrent = i === periods.length - 1;
+    const rowStyle = isCurrent ? 'style="background:var(--bg-input);font-weight:600"' : '';
+    th += `<tr ${rowStyle}><td>${isCurrent?'▶ ':''}${p.label}</td><td style="color:var(--income)">${formatMoney(d.income)}</td><td style="color:var(--expense)">${formatMoney(d.spending)}</td><td style="color:var(--invest-color)">${formatMoney(d.invest)}</td><td style="color:${d.surplus>=0?'var(--income)':'var(--expense)'}">${d.surplus>=0?'+':''}${formatMoney(d.surplus)}</td></tr>`;
+  }
+  th += '</tbody></table></div>';
+  document.getElementById('statCompareSection').innerHTML = th;
   renderExpenseChart(f); renderTrendChart(f);
   if (currentStatSubTab === 'budget') renderBudgetAnalysis();
   renderTxList('allTx', [...f].sort((a,b) => b.date !== a.date ? b.date.localeCompare(a.date) : (b.createdAt||0) - (a.createdAt||0)));
