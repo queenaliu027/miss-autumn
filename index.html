@@ -470,19 +470,10 @@ body { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', 'PingFang SC'
           <div><span style="font-size:12px;opacity:0.7">消费 </span><span id="ovMonthSpending" style="font-weight:600">¥0</span></div>
           <div><span style="font-size:12px;opacity:0.7">投资 </span><span id="ovMonthInvest" style="font-weight:600">¥0</span></div>
         </div>
+        <div style="font-size:11px;opacity:0.5;margin-top:4px">全口径支出 <span id="ovTotalExpense">¥0</span> · 本月 <span id="ovMonthCount">0笔</span></div>
       </div>
       <div class="section-title">✉️ 信封预算</div>
       <div id="envelopeSection"></div>
-      <div class="stats-row-4">
-        <div class="stat-card"><div class="label">收入</div><div class="value income" id="ovStatIncome">¥0</div></div>
-        <div class="stat-card"><div class="label">消费</div><div class="value expense" id="ovStatSpending">¥0</div></div>
-        <div class="stat-card"><div class="label">投资</div><div class="value invest" id="ovStatInvest">¥0</div></div>
-        <div class="stat-card"><div class="label">结余</div><div class="value" id="ovStatSurplus">¥0</div></div>
-      </div>
-      <div class="stats-row">
-        <div class="stat-card"><div class="label">全口径支出</div><div class="value expense" id="ovTotalExpense">¥0</div></div>
-        <div class="stat-card"><div class="label">本月笔数</div><div class="value" id="ovMonthCount">0笔</div></div>
-      </div>
       <div class="section-title">📋 最近记录 <span class="more" onclick="switchPage('stats')">查看全部</span></div>
       <div class="tx-list" id="recentTx"></div>
     </div>
@@ -565,10 +556,10 @@ body { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', 'PingFang SC'
     </div>
     <div class="page" id="page-wealth">
       <div class="page-header"><div>💎 财富看板</div></div>
-      <div class="wealth-dim-tabs">
-        <button class="wealth-dim-tab active" onclick="setWealthDim('month',this)">月度</button>
-        <button class="wealth-dim-tab" onclick="setWealthDim('quarter',this)">季度</button>
-        <button class="wealth-dim-tab" onclick="setWealthDim('year',this)">年度</button>
+      <div class="period-tabs">
+        <button class="period-tab active" onclick="setStatPeriod('month',this)">月度</button>
+        <button class="period-tab" onclick="setStatPeriod('quarter',this)">季度</button>
+        <button class="period-tab" onclick="setStatPeriod('year',this)">年度</button>
       </div>
       <div class="wealth-hero" id="wealthHero"></div>
       <div id="wealthCompareSection"></div>
@@ -866,7 +857,7 @@ function parseInput(text) {
 }
 
 // ==================== UI ====================
-let currentPage = 'overview', currentStatPeriod = 'month', currentStatSubTab = 'charts', currentWealthDim = 'month';
+let currentPage = 'overview', currentStatPeriod = 'month', currentStatSubTab = 'charts';
 let isRecording = false, recognition = null;
 let expenseChart = null, trendChart = null, netAssetTrendChart = null, wealthGrowthChart = null, spendingInvestChart = null;
 
@@ -895,10 +886,6 @@ function renderOverview() {
   document.getElementById('ovMonthIncome').textContent = formatMoney(inc);
   document.getElementById('ovMonthSpending').textContent = formatMoney(spd);
   document.getElementById('ovMonthInvest').textContent = formatMoney(inv);
-  document.getElementById('ovStatIncome').textContent = formatMoney(inc);
-  document.getElementById('ovStatSpending').textContent = formatMoney(spd);
-  document.getElementById('ovStatInvest').textContent = formatMoney(inv);
-  const se = document.getElementById('ovStatSurplus'); se.textContent = (sur >= 0 ? '+' : '-') + formatMoney(Math.abs(sur)); se.className = 'value ' + (sur >= 0 ? 'net-positive' : 'net-negative');
   document.getElementById('ovTotalExpense').textContent = formatMoney(mtx.filter(t => t.type === 'expense').reduce((s,t) => s + t.amount, 0));
   document.getElementById('ovMonthCount').textContent = mtx.length + '笔';
   renderEnvelopeSection();
@@ -1089,7 +1076,7 @@ function submitRecord() {
 function toggleVoice() { if (isRecording) { if (recognition) { recognition.stop(); recognition = null; } isRecording = false; document.getElementById('micBtn').classList.remove('recording'); document.getElementById('micBtn').textContent = '🎙️'; document.getElementById('voiceIndicator').classList.remove('show'); return; } const SR = window.SpeechRecognition || window.webkitSpeechRecognition; if (!SR) { showToast('浏览器不支持语音识别'); return; } recognition = new SR(); recognition.lang = 'zh-CN'; recognition.continuous = false; recognition.interimResults = true; recognition.onstart = () => { isRecording = true; document.getElementById('micBtn').classList.add('recording'); document.getElementById('micBtn').textContent = '⏹️'; document.getElementById('voiceIndicator').classList.add('show'); }; recognition.onresult = (e) => { let t = ''; for (let i = e.resultIndex; i < e.results.length; i++) t += e.results[i][0].transcript; document.getElementById('recordInput').value = t; handleInputChange(); }; recognition.onend = () => { isRecording = false; document.getElementById('micBtn').classList.remove('recording'); document.getElementById('micBtn').textContent = '🎙️'; document.getElementById('voiceIndicator').classList.remove('show'); }; recognition.onerror = (e) => { isRecording = false; document.getElementById('micBtn').classList.remove('recording'); document.getElementById('micBtn').textContent = '🎙️'; document.getElementById('voiceIndicator').classList.remove('show'); showToast('语音识别出错'); }; recognition.start(); }
 
 // ==================== Stats ====================
-function setStatPeriod(p, btn) { currentStatPeriod = p; document.querySelectorAll('.period-tab').forEach(t => t.classList.remove('active')); btn.classList.add('active'); renderStats(); }
+function setStatPeriod(p, btn) { currentStatPeriod = p; document.querySelectorAll('.period-tab').forEach(t => t.classList.remove('active')); document.querySelectorAll('.period-tab').forEach(t => { if (t.textContent.trim() === (p === 'month' ? '月度' : p === 'quarter' ? '季度' : '年度')) t.classList.add('active'); }); if (currentPage === 'stats') renderStats(); if (currentPage === 'wealth') renderWealth(); }
 function setStatSubTab(tab, btn) { currentStatSubTab = tab; document.querySelectorAll('.stat-sub-tab').forEach(t => t.classList.remove('active')); btn.classList.add('active'); document.getElementById('statChartsSection').style.display = tab === 'charts' ? 'block' : 'none'; document.getElementById('statBudgetSection').style.display = tab === 'budget' ? 'block' : 'none'; if (tab === 'budget') renderBudgetAnalysis(); }
 
 function getStatPeriodRange(period) {
@@ -1219,12 +1206,11 @@ function renderTrendChart(txs) {
 }
 
 // ==================== Wealth ====================
-function setWealthDim(dim, btn) { currentWealthDim = dim; document.querySelectorAll('.wealth-dim-tab').forEach(t => t.classList.remove('active')); btn.classList.add('active'); renderWealth(); }
 function getWealthPeriods(dim) { const now = new Date(), ps = [], cnt = dim === 'month' ? 12 : (dim === 'quarter' ? 8 : 5); for (let i = cnt - 1; i >= 0; i--) { let s, e, l; if (dim === 'month') { const d = new Date(now.getFullYear(), now.getMonth()-i, 1); s = `${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,'0')}-01`; const ed = new Date(d.getFullYear(), d.getMonth()+1, 0); e = `${ed.getFullYear()}-${String(ed.getMonth()+1).padStart(2,'0')}-${String(ed.getDate()).padStart(2,'0')}`; l = `${d.getFullYear()}/${d.getMonth()+1}`; } else if (dim === 'quarter') { const cq = Math.floor(now.getMonth()/3), qi = cq-i, yo = Math.floor(qi/4), qy = ((qi%4)+4)%4, y = now.getFullYear()+yo, qm = qy*3; s = `${y}-${String(qm+1).padStart(2,'0')}-01`; const ed = new Date(y, qm+3, 0); e = `${ed.getFullYear()}-${String(ed.getMonth()+1).padStart(2,'0')}-${String(ed.getDate()).padStart(2,'0')}`; l = `${y} Q${qy+1}`; } else { const y = now.getFullYear()-i; s = `${y}-01-01`; e = `${y}-12-31`; l = `${y}`; } ps.push({ start: s, end: e, label: l }); } return ps; }
 function getPeriodTxData(s, e) { const txs = state.transactions.filter(t => t.date >= s && t.date <= e); const income = txs.filter(t => t.type === 'income').reduce((s,t) => s + t.amount, 0), spending = txs.filter(t => t.type === 'expense' && getEnvelopeInfo(t.envelope).type === 'spending').reduce((s,t) => s + t.amount, 0), invest = txs.filter(t => t.type === 'expense' && getEnvelopeInfo(t.envelope).type === 'investing').reduce((s,t) => s + t.amount, 0); return { income, spending, invest, surplus: income - spending - invest }; }
 
 function renderWealth() {
-  const ps = getWealthPeriods(currentWealthDim), cp = ps[ps.length-1], pp = ps.length >= 2 ? ps[ps.length-2] : null;
+  const ps = getWealthPeriods(currentStatPeriod), cp = ps[ps.length-1], pp = ps.length >= 2 ? ps[ps.length-2] : null;
   const cd = getPeriodTxData(cp.start, cp.end), pd = pp ? getPeriodTxData(pp.start, pp.end) : null;
   let spendingBalance = 0, investBalance = 0;
   const spendingEnvs = [], investingEnvs = [];
@@ -1237,7 +1223,7 @@ function renderWealth() {
     else { investBalance += b; investingEnvs.push({ ...e, balance: b, monthUsed, color, icon }); }
   });
   const totalBalance = spendingBalance + investBalance;
-  const pl = currentWealthDim === 'month' ? '本月' : (currentWealthDim === 'quarter' ? '本季度' : '本年度');
+  const pl = currentStatPeriod === 'month' ? '本月' : (currentStatPeriod === 'quarter' ? '本季度' : '本年度');
   // Build spending envelope card
   let spendCardHtml = '';
   if (spendingEnvs.length) {
@@ -1266,7 +1252,7 @@ function renderWealth() {
   }
   document.getElementById('wealthHero').innerHTML = `<div class="hero-label">${pl}净结余</div><div class="hero-amount" style="color:#fff">${cd.surplus>=0?'+':'-'}${formatMoney(Math.abs(cd.surplus))}</div><div style="font-size:11px;color:rgba(255,255,255,0.6);text-align:center;margin-top:-4px;margin-bottom:4px">= 收入${formatMoney(cd.income)} - 消费${formatMoney(cd.spending)} - 投资${formatMoney(cd.invest)}</div><div class="hero-row"><div class="hero-stat"><div class="label">消费信封余额</div><div class="value">${formatMoney(spendingBalance)}</div></div><div class="hero-stat"><div class="label">投资信封余额</div><div class="value">${formatMoney(investBalance)}</div></div><div class="hero-stat"><div class="label">收入</div><div class="value">${formatMoney(cd.income)}</div></div></div>${spendCardHtml}${investCardHtml}`;
   const ce = document.getElementById('wealthCompareSection');
-  if (pd) { const pnl = currentWealthDim === 'month' ? '上月' : (currentWealthDim === 'quarter' ? '上季度' : '去年'); function cc(c,p) { if (p===0) return c>0?100:(c<0?-100:0); return ((c-p)/Math.abs(p)*100).toFixed(1); } function ct(v) { if (Math.abs(v)<0.1) return '<span class="wc-change neutral">持平</span>'; return v>0?`<span class="wc-change up">↑${Math.abs(v)}%</span>`:`<span class="wc-change down">↓${Math.abs(v)}%</span>`; }
+  if (pd) { const pnl = currentStatPeriod === 'month' ? '上月' : (currentStatPeriod === 'quarter' ? '上季度' : '去年'); function cc(c,p) { if (p===0) return c>0?100:(c<0?-100:0); return ((c-p)/Math.abs(p)*100).toFixed(1); } function ct(v) { if (Math.abs(v)<0.1) return '<span class="wc-change neutral">持平</span>'; return v>0?`<span class="wc-change up">↑${Math.abs(v)}%</span>`:`<span class="wc-change down">↓${Math.abs(v)}%</span>`; }
   ce.innerHTML = `<div class="wealth-compare-card"><div><div class="wc-label">收入 vs ${pnl}</div><div style="font-size:12px;color:var(--text-tertiary)">${pnl} ${formatMoney(pd.income)}</div></div><div style="display:flex;align-items:center"><span class="wc-value income">${formatMoney(cd.income)}</span>${ct(cc(cd.income,pd.income))}</div></div><div class="wealth-compare-card"><div><div class="wc-label">消费 vs ${pnl}</div><div style="font-size:12px;color:var(--text-tertiary)">${pnl} ${formatMoney(pd.spending)}</div></div><div style="display:flex;align-items:center"><span class="wc-value expense">${formatMoney(cd.spending)}</span>${ct(cc(cd.spending,pd.spending))}</div></div><div class="wealth-compare-card"><div><div class="wc-label">投资 vs ${pnl}</div><div style="font-size:12px;color:var(--text-tertiary)">${pnl} ${formatMoney(pd.invest)}</div></div><div style="display:flex;align-items:center"><span class="wc-value" style="color:var(--invest-color)">${formatMoney(cd.invest)}</span>${ct(cc(cd.invest,pd.invest))}</div></div><div class="wealth-compare-card"><div><div class="wc-label">净结余 vs ${pnl}</div><div style="font-size:12px;color:var(--text-tertiary)">${pnl} ${formatMoney(pd.surplus)}</div></div><div style="display:flex;align-items:center"><span class="wc-value ${cd.surplus>=0?'income':'expense'}">${cd.surplus>=0?'+':'-'}${formatMoney(Math.abs(cd.surplus))}</span>${ct(cc(cd.surplus,pd.surplus))}</div></div>`;
   } else ce.innerHTML = '<div class="wealth-compare-card"><div class="wc-label" style="text-align:center;width:100%">暂无上一周期数据</div></div>';
   renderSpendingInvestChart(cd); renderNetAssetTrendChart(ps); renderWealthGrowthChart(ps);
