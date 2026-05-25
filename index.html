@@ -48,6 +48,30 @@
   --budget-safe: #98D8C8; --budget-warn: #FFD166; --budget-danger: #E8888A;
   --invest-color: #B8A9C9; --invest-bg: rgba(184,169,201,0.15);
 }
+/* ===== 樱花花瓣动画 ===== */
+@keyframes sakuraFall {
+  0% { transform: translateY(-10vh) translateX(0) rotate(0deg); opacity: 0; }
+  10% { opacity: 1; }
+  90% { opacity: 0.8; }
+  100% { transform: translateY(105vh) translateX(80px) rotate(720deg); opacity: 0; }
+}
+@keyframes sakuraSway {
+  0%, 100% { margin-left: 0; }
+  50% { margin-left: 30px; }
+}
+.sakura-petals { position: fixed; top: 0; left: 0; width: 100%; height: 100%; pointer-events: none; z-index: 0; overflow: hidden; display: none; }
+[data-theme="sakura"] .sakura-petals { display: block; }
+.sakura-petal {
+  position: absolute; top: -20px;
+  width: 12px; height: 12px;
+  background: radial-gradient(ellipse at 30% 30%, #FFD1DC 0%, #FFB7C5 50%, #FFA3B5 100%);
+  border-radius: 50% 0 50% 50%;
+  opacity: 0;
+  animation: sakuraFall linear infinite, sakuraSway ease-in-out infinite;
+  box-shadow: 0 1px 3px rgba(255,183,197,0.3);
+}
+[data-theme="sakura"] .app-container { position: relative; z-index: 1; }
+
 * { margin:0; padding:0; box-sizing:border-box; }
 html, body { height:100%; overflow:hidden; }
 body { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', 'PingFang SC', 'Hiragino Sans GB', 'Microsoft YaHei', sans-serif; background: var(--bg); color: var(--text); transition: background 0.3s, color 0.3s; }
@@ -290,6 +314,7 @@ body { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', 'PingFang SC'
 </style>
 </head>
 <body>
+<div class="sakura-petals" id="sakuraPetals"></div>
 <div class="app-container">
   <div class="page-content" id="pageContent">
     <div class="page active" id="page-overview">
@@ -1210,7 +1235,22 @@ function importData(event) { const f = event.target.files[0]; if (!f) return; co
 function clearAllData() { document.getElementById('modalTitle').textContent = '确认清空'; document.getElementById('modalBody').innerHTML = '<p style="text-align:center;color:var(--text-secondary);margin-bottom:20px">所有数据将被永久删除，此操作不可恢复。</p><button class="modal-btn danger" onclick="state.accounts=JSON.parse(JSON.stringify(DEFAULT_ACCOUNTS));state.envelopes=JSON.parse(JSON.stringify(DEFAULT_ENVELOPES));state.expenseCategories=[...DEFAULT_EXPENSE_CATS];state.incomeCategories=[...DEFAULT_INCOME_CATS];state.transactions=[];saveState();closeModalDirect();showToast(\'数据已清空\');refreshCurrentPage()">确认清空</button><button class="modal-btn secondary" onclick="closeModalDirect()">取消</button>'; document.getElementById('modalOverlay').classList.add('show'); }
 
 function refreshCurrentPage() { switchPage(currentPage); }
-function init() { loadState(); setTheme(state.theme); document.getElementById('recordInput').addEventListener('input', handleInputChange); document.getElementById('expenseEnvelopeSelect').addEventListener('change', updateInvestAccountField); document.getElementById('expenseCategorySelect').addEventListener('change', onCategoryChange); renderOverview(); }
+function initSakuraPetals() {
+  const container = document.getElementById('sakuraPetals');
+  if (!container || container.children.length > 0) return;
+  for (let i = 0; i < 15; i++) {
+    const petal = document.createElement('div');
+    petal.className = 'sakura-petal';
+    const size = 8 + Math.random() * 10;
+    petal.style.width = size + 'px';
+    petal.style.height = size + 'px';
+    petal.style.left = Math.random() * 100 + '%';
+    petal.style.animationDuration = (8 + Math.random() * 12) + 's, ' + (3 + Math.random() * 4) + 's';
+    petal.style.animationDelay = Math.random() * 15 + 's, ' + Math.random() * 5 + 's';
+    container.appendChild(petal);
+  }
+}
+function init() { loadState(); setTheme(state.theme); initSakuraPetals(); document.getElementById('recordInput').addEventListener('input', handleInputChange); document.getElementById('expenseEnvelopeSelect').addEventListener('change', updateInvestAccountField); document.getElementById('expenseCategorySelect').addEventListener('change', onCategoryChange); renderOverview(); }
 document.addEventListener('DOMContentLoaded', init);
 </script>
 </body>
