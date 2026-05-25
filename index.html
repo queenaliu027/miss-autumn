@@ -759,9 +759,31 @@ function renderEnvelopeSection() {
   const c = document.getElementById('envelopeSection');
   const se = state.envelopes.filter(e => e.type === 'spending'), ie = state.envelopes.filter(e => e.type === 'investing');
   let h = '';
-  if (se.length) { h += '<div class="budget-progress-section"><div class="budget-header"><span class="title">🛒 消费信封</span></div>'; se.forEach(e => { const b = e.monthlyBudget || 0, u = getEnvelopeMonthUsed(e), r = b - u, p = b > 0 ? Math.min((u/b)*100,100) : 0, bc = getBudgetBarClass(u,b); h += `<div class="budget-cat-item"><div class="cat-header"><span class="cat-name"><span class="envelope-badge spending-badge">消费</span> ${e.name}</span><span class="cat-amounts ${r<0?'over':''}">${formatMoney(u)} / ${formatMoney(b)}</span></div><div class="budget-bar-bg"><div class="budget-bar-fill ${bc}" style="width:${p}%"></div></div><div class="budget-labels"><span>已用 ${formatMoney(u)}</span><span>${r>=0?'剩余 '+formatMoney(r):'超支 '+formatMoney(Math.abs(r))}</span></div></div>`; }); h += '</div>'; }
-  if (ie.length) { h += '<div class="budget-progress-section"><div class="budget-header"><span class="title">📈 投资信封</span></div>'; ie.forEach(e => { const b = e.monthlyBudget || 0, u = getEnvelopeMonthUsed(e), r = b - u, p = b > 0 ? Math.min((u/b)*100,100) : 0; let bc; if (b<=0) bc='invest-safe'; else if (u/b>=1) bc='invest-over'; else if (u/b>=0.9) bc='warn'; else bc='invest-safe'; h += `<div class="budget-cat-item"><div class="cat-header"><span class="cat-name"><span class="envelope-badge investing-badge">投资</span> ${e.name}</span><span class="cat-amounts">${formatMoney(u)} / ${formatMoney(b)}</span></div><div class="budget-bar-bg"><div class="budget-bar-fill ${bc}" style="width:${p}%"></div></div><div class="budget-labels"><span>已投 ${formatMoney(u)}</span><span>${r>=0?'剩余 '+formatMoney(r):'超额 '+formatMoney(Math.abs(r))}</span></div></div>`; }); h += '</div>'; }
+  if (se.length) { h += '<div class="budget-progress-section"><div class="budget-header"><span class="title">🛒 消费信封</span></div>'; se.forEach(e => { const b = e.monthlyBudget || 0, u = getEnvelopeMonthUsed(e), r = b - u, p = b > 0 ? Math.min((u/b)*100,100) : 0, bc = getBudgetBarClass(u,b); h += `<div class="budget-cat-item" style="cursor:pointer" onclick="showEnvelopeDetail('${e.id}')"><div class="cat-header"><span class="cat-name"><span class="envelope-badge spending-badge">消费</span> ${e.name}</span><span class="cat-amounts ${r<0?'over':''}">${formatMoney(u)} / ${formatMoney(b)}</span></div><div class="budget-bar-bg"><div class="budget-bar-fill ${bc}" style="width:${p}%"></div></div><div class="budget-labels"><span>已用 ${formatMoney(u)}</span><span>${r>=0?'剩余 '+formatMoney(r):'超支 '+formatMoney(Math.abs(r))}</span></div></div>`; }); h += '</div>'; }
+  if (ie.length) { h += '<div class="budget-progress-section"><div class="budget-header"><span class="title">📈 投资信封</span></div>'; ie.forEach(e => { const b = e.monthlyBudget || 0, u = getEnvelopeMonthUsed(e), r = b - u, p = b > 0 ? Math.min((u/b)*100,100) : 0; let bc; if (b<=0) bc='invest-safe'; else if (u/b>=1) bc='invest-over'; else if (u/b>=0.9) bc='warn'; else bc='invest-safe'; h += `<div class="budget-cat-item" style="cursor:pointer" onclick="showEnvelopeDetail('${e.id}')"><div class="cat-header"><span class="cat-name"><span class="envelope-badge investing-badge">投资</span> ${e.name}</span><span class="cat-amounts">${formatMoney(u)} / ${formatMoney(b)}</span></div><div class="budget-bar-bg"><div class="budget-bar-fill ${bc}" style="width:${p}%"></div></div><div class="budget-labels"><span>已投 ${formatMoney(u)}</span><span>${r>=0?'剩余 '+formatMoney(r):'超额 '+formatMoney(Math.abs(r))}</span></div></div>`; }); h += '</div>'; }
   c.innerHTML = h;
+}
+function showEnvelopeDetail(envId) {
+  const env = getEnvelopeInfo(envId);
+  const ms = getMonthStart();
+  const isInv = env.type === 'investing';
+  const txs = state.transactions.filter(t => t.envelope === envId && t.type === 'expense' && t.date >= ms).sort((a,b) => b.date.localeCompare(a.date) || b.createdAt - a.createdAt);
+  const total = txs.reduce((s,t) => s + t.amount, 0);
+  let html = `<div style="margin-bottom:16px"><div style="font-size:20px;font-weight:700;margin-bottom:4px">${isInv?'📈':'🛒'} ${env.name}</div><div style="font-size:13px;color:var(--text-secondary)">本月${isInv?'已投':'已用'} <span style="color:${isInv?'var(--invest-color)':'var(--expense)'};font-weight:600">${formatMoney(total)}</span> / 预算 ${formatMoney(env.monthlyBudget||0)}</div></div>`;
+  if (!txs.length) { html += '<div style="text-align:center;color:var(--text-tertiary);padding:30px 0;font-size:14px">本月暂无记录</div>'; }
+  else {
+    const g = {}; txs.forEach(t => { if (!g[t.date]) g[t.date] = []; g[t.date].push(t); });
+    for (const [date, items] of Object.entries(g)) {
+      html += `<div style="font-size:12px;color:var(--text-tertiary);margin-bottom:6px;margin-top:12px">${formatDate(date)}</div>`;
+      items.forEach(t => {
+        const cat = getCatInfo(t.category,'expense'), acc = getAccountInfo(t.account);
+        html += `<div style="display:flex;align-items:center;gap:10px;padding:10px 0;border-bottom:1px solid var(--border)"><span style="font-size:20px">${cat.icon}</span><div style="flex:1;min-width:0"><div style="font-size:14px;font-weight:500">${cat.name}</div><div style="font-size:11px;color:var(--text-tertiary)">${t.note||''}${t.note?' · ':''}${acc.icon} ${acc.name}</div></div><div style="font-size:15px;font-weight:600;color:var(--expense)">-${formatMoney(t.amount)}</div></div>`;
+      });
+    }
+  }
+  document.getElementById('modalTitle').textContent = isInv ? '投资明细' : '消费明细';
+  document.getElementById('modalBody').innerHTML = html + '<button class="modal-btn secondary" onclick="closeModalDirect()" style="margin-top:8px">关闭</button>';
+  document.getElementById('modalOverlay').classList.add('show');
 }
 
 function renderTxList(cid, txList) {
