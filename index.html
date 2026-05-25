@@ -48,6 +48,54 @@
   --budget-safe: #98D8C8; --budget-warn: #FFD166; --budget-danger: #E8888A;
   --invest-color: #B8A9C9; --invest-bg: rgba(184,169,201,0.15);
 }
+[data-theme="matcha"] {
+  --bg: #FAF6F0; --bg-card: #ffffff; --bg-input: #F0EDE6;
+  --text: #3D4A3E; --text-secondary: #7A8B7C; --text-tertiary: #A8B8A9;
+  --primary: #8FBC8F; --primary-light: #A8D5A8; --primary-bg: rgba(143,188,143,0.12);
+  --income: #6BAF7A; --income-bg: rgba(107,175,122,0.12);
+  --expense: #C47A5A; --expense-bg: rgba(196,122,90,0.12);
+  --transfer: #8FBC8F; --transfer-bg: rgba(143,188,143,0.12);
+  --border: #E0DDD5; --shadow: 0 2px 12px rgba(143,188,143,0.1); --shadow-lg: 0 8px 30px rgba(143,188,143,0.15);
+  --net-positive: #6BAF7A; --net-negative: #C47A5A;
+  --budget-safe: #6BAF7A; --budget-warn: #D4A853; --budget-danger: #C47A5A;
+  --invest-color: #7A9E7A; --invest-bg: rgba(122,158,122,0.12);
+}
+[data-theme="lavender"] {
+  --bg: #F0ECF5; --bg-card: #ffffff; --bg-input: #E8E3F0;
+  --text: #3D3550; --text-secondary: #7A6E8A; --text-tertiary: #A899B5;
+  --primary: #B8A9C9; --primary-light: #D1C5DE; --primary-bg: rgba(184,169,201,0.15);
+  --income: #7AB8A8; --income-bg: rgba(122,184,168,0.12);
+  --expense: #C4788A; --expense-bg: rgba(196,120,138,0.12);
+  --transfer: #B8A9C9; --transfer-bg: rgba(184,169,201,0.12);
+  --border: #DDD6E8; --shadow: 0 2px 12px rgba(184,169,201,0.12); --shadow-lg: 0 8px 30px rgba(184,169,201,0.18);
+  --net-positive: #7AB8A8; --net-negative: #C4788A;
+  --budget-safe: #7AB8A8; --budget-warn: #D4A853; --budget-danger: #C4788A;
+  --invest-color: #9A8AB8; --invest-bg: rgba(154,138,184,0.12);
+}
+[data-theme="orange-cat"] {
+  --bg: #FFFBF0; --bg-card: #ffffff; --bg-input: #FFF3E0;
+  --text: #4A3520; --text-secondary: #9B7A55; --text-tertiary: #C4A580;
+  --primary: #FF9F43; --primary-light: #FFB976; --primary-bg: rgba(255,159,67,0.12);
+  --income: #6BAF7A; --income-bg: rgba(107,175,122,0.12);
+  --expense: #E07A5F; --expense-bg: rgba(224,122,95,0.12);
+  --transfer: #FF9F43; --transfer-bg: rgba(255,159,67,0.12);
+  --border: #F0DFC8; --shadow: 0 2px 12px rgba(255,159,67,0.1); --shadow-lg: 0 8px 30px rgba(255,159,67,0.15);
+  --net-positive: #6BAF7A; --net-negative: #E07A5F;
+  --budget-safe: #6BAF7A; --budget-warn: #FFD166; --budget-danger: #E07A5F;
+  --invest-color: #D4893A; --invest-bg: rgba(212,137,58,0.12);
+}
+[data-theme="glacier"] {
+  --bg: #F4F6F9; --bg-card: #ffffff; --bg-input: #E8EDF2;
+  --text: #2C3E50; --text-secondary: #6B8299; --text-tertiary: #9BB5CC;
+  --primary: #5DADE2; --primary-light: #85C7E8; --primary-bg: rgba(93,173,226,0.12);
+  --income: #48C9B0; --income-bg: rgba(72,201,176,0.12);
+  --expense: #E57373; --expense-bg: rgba(229,115,115,0.12);
+  --transfer: #5DADE2; --transfer-bg: rgba(93,173,226,0.12);
+  --border: #D5DFE8; --shadow: 0 2px 12px rgba(93,173,226,0.1); --shadow-lg: 0 8px 30px rgba(93,173,226,0.15);
+  --net-positive: #48C9B0; --net-negative: #E57373;
+  --budget-safe: #48C9B0; --budget-warn: #F5B041; --budget-danger: #E57373;
+  --invest-color: #4A90B8; --invest-bg: rgba(74,144,184,0.12);
+}
 /* ===== 樱花花瓣动画 ===== */
 @keyframes sakuraFall {
   0% { transform: translateY(-10vh) translateX(0) rotate(0deg); opacity: 0; }
@@ -454,6 +502,22 @@ body { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', 'PingFang SC'
     <div onclick="setTheme('dark')" class="theme-option" data-t="dark" style="display:flex;flex-direction:column;align-items:center;gap:6px;cursor:pointer">
       <div style="width:44px;height:44px;border-radius:50%;background:linear-gradient(135deg,#0f0f1a,#2d2d44);border:3px solid transparent" class="theme-dot-dark"></div>
       <span style="font-size:11px;color:var(--text-secondary)">🌙 深色</span>
+    </div>
+    <div onclick="setTheme('matcha')" class="theme-option" data-t="matcha" style="display:flex;flex-direction:column;align-items:center;gap:6px;cursor:pointer">
+      <div style="width:44px;height:44px;border-radius:50%;background:linear-gradient(135deg,#8FBC8F,#FAF6F0);border:3px solid transparent" class="theme-dot-matcha"></div>
+      <span style="font-size:11px;color:var(--text-secondary)">🍵 抹茶拿铁</span>
+    </div>
+    <div onclick="setTheme('lavender')" class="theme-option" data-t="lavender" style="display:flex;flex-direction:column;align-items:center;gap:6px;cursor:pointer">
+      <div style="width:44px;height:44px;border-radius:50%;background:linear-gradient(135deg,#B8A9C9,#C5D3E8);border:3px solid transparent" class="theme-dot-lavender"></div>
+      <span style="font-size:11px;color:var(--text-secondary)">🌙 薰衣草</span>
+    </div>
+    <div onclick="setTheme('orange-cat')" class="theme-option" data-t="orange-cat" style="display:flex;flex-direction:column;align-items:center;gap:6px;cursor:pointer">
+      <div style="width:44px;height:44px;border-radius:50%;background:linear-gradient(135deg,#FF9F43,#FFF3CD);border:3px solid transparent" class="theme-dot-orange-cat"></div>
+      <span style="font-size:11px;color:var(--text-secondary)">🐱 橘子猫咪</span>
+    </div>
+    <div onclick="setTheme('glacier')" class="theme-option" data-t="glacier" style="display:flex;flex-direction:column;align-items:center;gap:6px;cursor:pointer">
+      <div style="width:44px;height:44px;border-radius:50%;background:linear-gradient(135deg,#5DADE2,#ECF0F1);border:3px solid transparent" class="theme-dot-glacier"></div>
+      <span style="font-size:11px;color:var(--text-secondary)">🧊 冰川蓝</span>
     </div>
   </div>
 </div>
@@ -1155,7 +1219,7 @@ function renderSettings() {
 function setTheme(themeName) {
   state.theme = themeName;
   document.documentElement.setAttribute('data-theme', themeName);
-  const themeColors = { light: '#6c5ce7', dark: '#0f0f1a', sakura: '#FFB7C5' };
+  const themeColors = { light: '#6c5ce7', dark: '#0f0f1a', sakura: '#FFB7C5', matcha: '#8FBC8F', lavender: '#B8A9C9', 'orange-cat': '#FF9F43', glacier: '#5DADE2' };
   const meta = document.querySelector('meta[name="theme-color"]');
   if (meta) meta.content = themeColors[themeName] || '#6c5ce7';
   saveState();
