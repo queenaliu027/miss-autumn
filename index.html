@@ -1,4 +1,4 @@
-﻿<!DOCTYPE html>
+<!DOCTYPE html>
 <html lang="zh-CN">
 <head>
 <meta charset="UTF-8">
@@ -6,35 +6,47 @@
 <title>Miss Autumn的记账本</title>
 <link rel="manifest" href="manifest.json">
 <link rel="apple-touch-icon" href="icons/apple-touch-icon.png">
-<meta name="theme-color" content="#e67e22">
+<meta name="theme-color" content="#6c5ce7">
 <link rel="icon" type="image/png" sizes="192x192" href="icons/icon-192.png">
 <link rel="icon" type="image/x-icon" href="favicon.ico">
 <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.umd.min.js"></script>
 <style>
 :root {
-  --bg: #faf6f1; --bg-card: #ffffff; --bg-input: #f5ede3;
-  --text: #3e2723; --text-secondary: #8d6e63; --text-tertiary: #a1887f;
-  --primary: #e67e22; --primary-light: #f0a04b; --primary-bg: rgba(230,126,34,0.1);
-  --income: #6b8e3a; --income-bg: rgba(107,142,58,0.1);
-  --expense: #c0392b; --expense-bg: rgba(192,57,43,0.1);
-  --transfer: #d4a017; --transfer-bg: rgba(212,160,23,0.1);
-  --border: #e8d5c4; --shadow: 0 2px 12px rgba(62,39,35,0.08); --shadow-lg: 0 8px 30px rgba(62,39,35,0.12);
+  --bg: #f5f7fa; --bg-card: #ffffff; --bg-input: #f0f2f5;
+  --text: #1a1a2e; --text-secondary: #6b7280; --text-tertiary: #9ca3af;
+  --primary: #6c5ce7; --primary-light: #a29bfe; --primary-bg: rgba(108,92,231,0.1);
+  --income: #00b894; --income-bg: rgba(0,184,148,0.1);
+  --expense: #e17055; --expense-bg: rgba(225,112,85,0.1);
+  --transfer: #6c5ce7; --transfer-bg: rgba(108,92,231,0.1);
+  --border: #e5e7eb; --shadow: 0 2px 12px rgba(0,0,0,0.08); --shadow-lg: 0 8px 30px rgba(0,0,0,0.12);
   --radius: 16px; --radius-sm: 10px; --safe-bottom: env(safe-area-inset-bottom, 0px);
-  --net-positive: #6b8e3a; --net-negative: #c0392b;
-  --budget-safe: #6b8e3a; --budget-warn: #e6a817; --budget-danger: #c0392b;
-  --invest-color: #d4a017; --invest-bg: rgba(212,160,23,0.1);
+  --net-positive: #00b894; --net-negative: #e17055;
+  --budget-safe: #00b894; --budget-warn: #f39c12; --budget-danger: #e17055;
+  --invest-color: #6c5ce7; --invest-bg: rgba(108,92,231,0.1);
 }
 [data-theme="dark"] {
-  --bg: #1a0f07; --bg-card: #2c1810; --bg-input: #3d2317;
-  --text: #f5e6d3; --text-secondary: #bc9a7c; --text-tertiary: #8d6e63;
-  --primary: #f0a04b; --primary-light: #e67e22; --primary-bg: rgba(240,160,75,0.15);
-  --income: #8bc34a; --income-bg: rgba(139,195,74,0.15);
-  --expense: #e57373; --expense-bg: rgba(229,115,115,0.15);
-  --transfer: #f0c060; --transfer-bg: rgba(240,192,96,0.15);
-  --border: #4a3022; --shadow: 0 2px 12px rgba(0,0,0,0.4); --shadow-lg: 0 8px 30px rgba(0,0,0,0.5);
-  --net-positive: #8bc34a; --net-negative: #e57373;
-  --budget-safe: #8bc34a; --budget-warn: #ffc107; --budget-danger: #e57373;
-  --invest-color: #f0c060; --invest-bg: rgba(240,192,96,0.15);
+  --bg: #0f0f1a; --bg-card: #1a1a2e; --bg-input: #252540;
+  --text: #e8e8f0; --text-secondary: #9ca3af; --text-tertiary: #6b7280;
+  --primary: #a29bfe; --primary-light: #6c5ce7; --primary-bg: rgba(162,155,254,0.15);
+  --income: #55efc4; --income-bg: rgba(85,239,196,0.15);
+  --expense: #ff7675; --expense-bg: rgba(255,118,117,0.15);
+  --transfer: #a29bfe; --transfer-bg: rgba(162,155,254,0.15);
+  --border: #2d2d44; --shadow: 0 2px 12px rgba(0,0,0,0.3); --shadow-lg: 0 8px 30px rgba(0,0,0,0.4);
+  --net-positive: #55efc4; --net-negative: #ff7675;
+  --budget-safe: #55efc4; --budget-warn: #f1c40f; --budget-danger: #ff7675;
+  --invest-color: #a29bfe; --invest-bg: rgba(162,155,254,0.15);
+}
+[data-theme="sakura"] {
+  --bg: #FFF8F0; --bg-card: #ffffff; --bg-input: #FFF0F3;
+  --text: #4a3040; --text-secondary: #9b7a8a; --text-tertiary: #c4a5b5;
+  --primary: #FFB7C5; --primary-light: #FFCDD9; --primary-bg: rgba(255,183,197,0.15);
+  --income: #98D8C8; --income-bg: rgba(152,216,200,0.15);
+  --expense: #E8888A; --expense-bg: rgba(232,136,138,0.15);
+  --transfer: #B8A9C9; --transfer-bg: rgba(184,169,201,0.15);
+  --border: #F5E0E6; --shadow: 0 2px 12px rgba(255,183,197,0.12); --shadow-lg: 0 8px 30px rgba(255,183,197,0.18);
+  --net-positive: #98D8C8; --net-negative: #E8888A;
+  --budget-safe: #98D8C8; --budget-warn: #FFD166; --budget-danger: #E8888A;
+  --invest-color: #B8A9C9; --invest-bg: rgba(184,169,201,0.15);
 }
 * { margin:0; padding:0; box-sizing:border-box; }
 html, body { height:100%; overflow:hidden; }
@@ -165,7 +177,7 @@ body { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', 'PingFang SC'
 .tab-item .tab-icon { font-size: 22px; }
 .tab-item .tab-label { font-size: 10px; font-weight: 500; }
 .tab-item.active { color: var(--primary); }
-.tab-item.record-tab .tab-icon { width: 44px; height: 44px; background: var(--primary); color: #fff; border-radius: 50%; display: flex; align-items: center; justify-content: center; font-size: 24px; margin-top: -20px; box-shadow: 0 4px 12px rgba(230,126,34,0.45); }
+.tab-item.record-tab .tab-icon { width: 44px; height: 44px; background: var(--primary); color: #fff; border-radius: 50%; display: flex; align-items: center; justify-content: center; font-size: 24px; margin-top: -20px; box-shadow: 0 4px 12px rgba(108,92,231,0.4); }
 .empty-state { text-align: center; padding: 40px 20px; color: var(--text-tertiary); }
 .empty-state .emoji { font-size: 48px; margin-bottom: 12px; }
 .toast { position: fixed; top: 60px; left: 50%; transform: translateX(-50%) translateY(-100px); background: var(--bg-card); color: var(--text); padding: 12px 24px; border-radius: 25px; font-size: 14px; box-shadow: var(--shadow-lg); z-index: 2000; transition: transform 0.4s cubic-bezier(0.34,1.56,0.64,1); white-space: nowrap; }
@@ -205,13 +217,13 @@ body { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', 'PingFang SC'
 .budget-progress-section .budget-header .amount { font-size: 13px; color: var(--text-secondary); }
 .budget-bar-bg { width: 100%; height: 12px; background: var(--bg-input); border-radius: 6px; overflow: hidden; }
 .budget-bar-fill { height: 100%; border-radius: 6px; transition: width 0.5s ease; min-width: 0; }
-.budget-bar-fill.safe { background: linear-gradient(90deg, #6b8e3a, #8bc34a); }
-.budget-bar-fill.warn { background: linear-gradient(90deg, #e6a817, #f0c060); }
-.budget-bar-fill.danger { background: linear-gradient(90deg, #c0392b, #e57373); }
-.budget-bar-fill.over { background: linear-gradient(90deg, #b71c1c, #e57373); animation: pulse 1.5s infinite; }
-.budget-bar-fill.invest-safe { background: linear-gradient(90deg, #d4a017, #e8a440); }
-.budget-bar-fill.invest-warn { background: linear-gradient(90deg, #e6a817, #f0c060); }
-.budget-bar-fill.invest-over { background: linear-gradient(90deg, #b71c1c, #e57373); animation: pulse 1.5s infinite; }
+.budget-bar-fill.safe { background: linear-gradient(90deg, #00b894, #55efc4); }
+.budget-bar-fill.warn { background: linear-gradient(90deg, #f39c12, #fdcb6e); }
+.budget-bar-fill.danger { background: linear-gradient(90deg, #e17055, #ff7675); }
+.budget-bar-fill.over { background: linear-gradient(90deg, #d63031, #ff7675); animation: pulse 1.5s infinite; }
+.budget-bar-fill.invest-safe { background: linear-gradient(90deg, #6c5ce7, #a29bfe); }
+.budget-bar-fill.invest-warn { background: linear-gradient(90deg, #f39c12, #fdcb6e); }
+.budget-bar-fill.invest-over { background: linear-gradient(90deg, #d63031, #ff7675); animation: pulse 1.5s infinite; }
 .budget-section-divider { font-size: 13px; font-weight: 600; color: var(--primary); padding: 12px 0 6px; margin-top: 8px; border-top: 1px solid var(--border); display: flex; align-items: center; gap: 6px; }
 .wealth-env-card { background: rgba(255,255,255,0.12); border-radius: 10px; padding: 10px 12px; margin-top: 10px; }
 .wealth-env-card-title { font-size: 13px; font-weight: 600; margin-bottom: 8px; display: flex; align-items: center; gap: 4px; }
@@ -232,7 +244,7 @@ body { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', 'PingFang SC'
 .envelope-badge { display: inline-block; font-size: 10px; padding: 1px 6px; border-radius: 8px; }
 .envelope-badge.spending-badge { background: var(--expense-bg); color: var(--expense); }
 .envelope-badge.investing-badge { background: var(--invest-bg); color: var(--invest-color); }
-.wealth-hero { background: linear-gradient(135deg, #d4742c, #e8a440, #c9883a); border-radius: var(--radius); padding: 24px 20px; margin-bottom: 16px; color: #fff; box-shadow: 0 8px 30px rgba(212,116,44,0.35); animation: slideUp 0.4s ease; }
+.wealth-hero { background: linear-gradient(135deg, #6c5ce7, #a29bfe, #74b9ff); border-radius: var(--radius); padding: 24px 20px; margin-bottom: 16px; color: #fff; box-shadow: 0 8px 30px rgba(108,92,231,0.3); animation: slideUp 0.4s ease; }
 .wealth-hero .hero-label { font-size: 13px; opacity: 0.8; margin-bottom: 4px; }
 .wealth-hero .hero-amount { font-size: 36px; font-weight: 800; letter-spacing: -1.5px; margin-bottom: 16px; }
 .wealth-hero .hero-row { display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 12px; }
@@ -403,6 +415,23 @@ body { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', 'PingFang SC'
     </div>
     <div class="page" id="page-settings">
       <div class="page-header"><div>⚙️ 设置</div></div>
+      <div class="setting-group">
+  <div class="setting-group-title">🎨 主题风格</div>
+  <div style="padding:14px 20px;display:flex;gap:12px;overflow-x:auto" id="themeSelector">
+    <div onclick="setTheme('light')" class="theme-option" data-t="light" style="display:flex;flex-direction:column;align-items:center;gap:6px;cursor:pointer">
+      <div style="width:44px;height:44px;border-radius:50%;background:linear-gradient(135deg,#6c5ce7,#a29bfe);border:3px solid transparent" class="theme-dot-light"></div>
+      <span style="font-size:11px;color:var(--text-secondary)">经典紫</span>
+    </div>
+    <div onclick="setTheme('sakura')" class="theme-option" data-t="sakura" style="display:flex;flex-direction:column;align-items:center;gap:6px;cursor:pointer">
+      <div style="width:44px;height:44px;border-radius:50%;background:linear-gradient(135deg,#FFB7C5,#98D8C8);border:3px solid transparent" class="theme-dot-sakura"></div>
+      <span style="font-size:11px;color:var(--text-secondary)">🌸 樱花薄荷</span>
+    </div>
+    <div onclick="setTheme('dark')" class="theme-option" data-t="dark" style="display:flex;flex-direction:column;align-items:center;gap:6px;cursor:pointer">
+      <div style="width:44px;height:44px;border-radius:50%;background:linear-gradient(135deg,#0f0f1a,#2d2d44);border:3px solid transparent" class="theme-dot-dark"></div>
+      <span style="font-size:11px;color:var(--text-secondary)">🌙 深色</span>
+    </div>
+  </div>
+</div>
       <div class="setting-group"><div class="setting-item" onclick="toggleTheme()"><div class="left"><span class="icon">🌙</span><span class="label">深色模式</span></div><div class="toggle" id="themeToggle"></div></div></div>
       <div class="setting-group">
         <div class="setting-group-title">信封管理</div>
@@ -585,18 +614,18 @@ function getMonthInvest(txs) { return txs.filter(t => t.type === 'expense' && ge
 function getBudgetBarClass(actual, budget) { if (budget <= 0) return 'safe'; const r = actual / budget; if (r >= 1) return 'over'; if (r >= 0.9) return 'danger'; if (r >= 0.7) return 'warn'; return 'safe'; }
 
 function getEnvelopeColor(env) {
-  const spendingColors = { fixed: '#c0392b', living: '#e6a817', growth: '#d4742c', health: '#e07b5a' };
-  const investingColors = { finance: '#d4a017' };
-  const extraSpending = ['#e8a440','#c9883a','#b5651d','#cc5533','#da7b3e','#c8963e'];
-  const extraInvesting = ['#d4a017','#c9883a','#b8860b','#cd853f','#daa520','#b5651d'];
+  const spendingColors = { fixed: '#e17055', living: '#fdcb6e', growth: '#e77f67', health: '#f8a5c2' };
+  const investingColors = { finance: '#6c5ce7' };
+  const extraSpending = ['#fab1a0','#ffeaa7','#ff7979','#ffcccc','#e55039','#f6b93b'];
+  const extraInvesting = ['#a29bfe','#74b9ff','#0984e3','#81ecec','#6c5ce7','#b8e994'];
   if (env.type === 'spending') {
     if (spendingColors[env.id]) return spendingColors[env.id];
     const seIdx = state.envelopes.filter(e => e.type === 'spending' && !spendingColors[e.id]).indexOf(env);
-    return extraSpending[seIdx % extraSpending.length] || '#c0392b';
+    return extraSpending[seIdx % extraSpending.length] || '#e17055';
   } else {
     if (investingColors[env.id]) return investingColors[env.id];
     const ieIdx = state.envelopes.filter(e => e.type === 'investing' && !investingColors[e.id]).indexOf(env);
-    return extraInvesting[ieIdx % extraInvesting.length] || '#d4a017';
+    return extraInvesting[ieIdx % extraInvesting.length] || '#6c5ce7';
   }
 }
 function getEnvelopeIcon(env) {
@@ -950,10 +979,10 @@ function renderStats() {
     if (statCompareChart) statCompareChart.destroy();
     const tc = getComputedStyle(document.documentElement);
     statCompareChart = new Chart(ctx, { type: 'bar', data: { labels, datasets: [
-      { label: '收入', data: incData, backgroundColor: '#6b8e3acc', borderRadius: 4 },
-      { label: '消费', data: spdData, backgroundColor: '#c0392bcc', borderRadius: 4 },
-      { label: '投资', data: invData, backgroundColor: '#d4a017cc', borderRadius: 4 },
-      { label: '结余', data: surData, backgroundColor: surData.some(v=>v<0) ? '#e6a817cc' : '#6b8e3acc', borderRadius: 4 }
+      { label: '收入', data: incData, backgroundColor: '#00b894cc', borderRadius: 4 },
+      { label: '消费', data: spdData, backgroundColor: '#e17055cc', borderRadius: 4 },
+      { label: '投资', data: invData, backgroundColor: '#6c5ce7cc', borderRadius: 4 },
+      { label: '结余', data: surData, backgroundColor: surData.some(v=>v<0) ? '#fdcb6ecc' : '#00cec9cc', borderRadius: 4 }
     ] }, options: { responsive: true, plugins: { legend: { labels: { usePointStyle: true, font: { size: 11 }, color: tc.getPropertyValue('--text-secondary').trim() } } }, scales: { x: { ticks: { font: { size: 11 }, color: tc.getPropertyValue('--text-tertiary').trim() }, grid: { display: false } }, y: { ticks: { font: { size: 10 }, color: tc.getPropertyValue('--text-tertiary').trim(), callback: v => v >= 1000 ? (v/1000)+'k' : v }, grid: { color: tc.getPropertyValue('--border').trim() } } } } });
   }
   renderExpenseChart(f); renderTrendChart(f);
@@ -976,7 +1005,7 @@ function renderExpenseChart(txs) {
   st.forEach(t => { const cat = getCatInfo(t.category,'expense'); if (!cm[cat.name]) cm[cat.name] = { amount: 0, icon: cat.icon }; cm[cat.name].amount += t.amount; });
   const en = Object.entries(cm).sort((a,b) => b[1].amount - a[1].amount);
   if (!en.length) { if (expenseChart) { expenseChart.destroy(); expenseChart = null; } return; }
-  const colors = ['#d4a017','#c0392b','#6b8e3a','#e6a817','#cc5533','#8b9a3e','#c0392b','#e8a440'];
+  const colors = ['#6c5ce7','#e17055','#00b894','#fdcb6e','#e84393','#00cec9','#d63031','#74b9ff'];
   const ctx = document.getElementById('expenseChart').getContext('2d'); if (expenseChart) expenseChart.destroy();
   expenseChart = new Chart(ctx, { type: 'doughnut', data: { labels: en.map(([n,d]) => `${d.icon} ${n}`), datasets: [{ data: en.map(([_,d]) => d.amount), backgroundColor: colors.slice(0, en.length), borderWidth: 2, borderColor: getComputedStyle(document.documentElement).getPropertyValue('--bg-card').trim() }] }, options: { responsive: true, plugins: { legend: { position: 'bottom', labels: { padding: 12, usePointStyle: true, font: { size: 12 }, color: getComputedStyle(document.documentElement).getPropertyValue('--text-secondary').trim() } } }, cutout: '55%' } });
 }
@@ -988,7 +1017,7 @@ function renderTrendChart(txs) {
   else { const ms = {}; txs.forEach(t => { const m = t.date.substring(0,7); if (!ms[m]) ms[m] = { income: 0, spending: 0, invest: 0 }; if (t.type === 'income') ms[m].income += t.amount; if (t.type === 'expense') { if (getEnvelopeInfo(t.envelope).type === 'spending') ms[m].spending += t.amount; else ms[m].invest += t.amount; } }); const sorted = Object.keys(ms).sort(); labels = sorted.map(m => m.substring(5)); incD = sorted.map(m => ms[m].income); spdD = sorted.map(m => ms[m].spending); invD = sorted.map(m => ms[m].invest); }
   const ctx = document.getElementById('trendChart').getContext('2d'); if (trendChart) trendChart.destroy();
   const tc = getComputedStyle(document.documentElement); const ts = tc.getPropertyValue('--text-secondary').trim(), tt = tc.getPropertyValue('--text-tertiary').trim(), bc = tc.getPropertyValue('--border').trim();
-  trendChart = new Chart(ctx, { type: 'line', data: { labels, datasets: [ { label: '收入', data: incD, borderColor: '#6b8e3a', backgroundColor: 'rgba(107,142,58,0.1)', fill: true, tension: 0.4, pointRadius: 2, borderWidth: 2 }, { label: '消费', data: spdD, borderColor: '#c0392b', backgroundColor: 'rgba(192,57,43,0.1)', fill: true, tension: 0.4, pointRadius: 2, borderWidth: 2 }, { label: '投资', data: invD, borderColor: '#d4a017', backgroundColor: 'rgba(212,160,23,0.1)', fill: true, tension: 0.4, pointRadius: 2, borderWidth: 2, borderDash: [5,5] } ] }, options: { responsive: true, plugins: { legend: { labels: { usePointStyle: true, font: { size: 12 }, color: ts } } }, scales: { x: { ticks: { font: { size: 10 }, color: tt, maxTicksLimit: 8 }, grid: { display: false } }, y: { ticks: { font: { size: 10 }, color: tt }, grid: { color: bc } } } } });
+  trendChart = new Chart(ctx, { type: 'line', data: { labels, datasets: [ { label: '收入', data: incD, borderColor: '#00b894', backgroundColor: 'rgba(0,184,148,0.1)', fill: true, tension: 0.4, pointRadius: 2, borderWidth: 2 }, { label: '消费', data: spdD, borderColor: '#e17055', backgroundColor: 'rgba(225,112,85,0.1)', fill: true, tension: 0.4, pointRadius: 2, borderWidth: 2 }, { label: '投资', data: invD, borderColor: '#6c5ce7', backgroundColor: 'rgba(108,92,231,0.1)', fill: true, tension: 0.4, pointRadius: 2, borderWidth: 2, borderDash: [5,5] } ] }, options: { responsive: true, plugins: { legend: { labels: { usePointStyle: true, font: { size: 12 }, color: ts } } }, scales: { x: { ticks: { font: { size: 10 }, color: tt, maxTicksLimit: 8 }, grid: { display: false } }, y: { ticks: { font: { size: 10 }, color: tt }, grid: { color: bc } } } } });
 }
 
 // ==================== Wealth ====================
@@ -1046,12 +1075,16 @@ function renderWealth() {
 }
 
 function renderSpendingInvestChart(data) { const ctx = document.getElementById('spendingInvestChart'); if (!ctx) return; const c = ctx.getContext('2d'); if (spendingInvestChart) spendingInvestChart.destroy(); const labels = [], amounts = [], colors = []; state.envelopes.forEach(e => { const used = getEnvelopeMonthUsed(e); if (used > 0) { labels.push(getEnvelopeIcon(e) + ' ' + e.name); amounts.push(used); colors.push(getEnvelopeColor(e)); } }); if (!amounts.length) { spendingInvestChart = null; return; } spendingInvestChart = new Chart(c, { type: 'doughnut', data: { labels: labels, datasets: [{ data: amounts, backgroundColor: colors, borderWidth: 2, borderColor: getComputedStyle(document.documentElement).getPropertyValue('--bg-card').trim() }] }, options: { responsive: true, plugins: { legend: { position: 'bottom', labels: { padding: 12, usePointStyle: true, font: { size: 12 }, color: getComputedStyle(document.documentElement).getPropertyValue('--text-secondary').trim() } }, title: { display: true, text: '信封支出占比', font: { size: 14 }, color: getComputedStyle(document.documentElement).getPropertyValue('--text-secondary').trim() } }, cutout: '55%' } }); }
-function renderNetAssetTrendChart(periods) { const ls = [], d = []; periods.forEach(p => { ls.push(p.label); const txs = state.transactions.filter(t => t.date >= p.start && t.date <= p.end); d.push(txs.filter(t => t.type === 'income').reduce((s,t) => s + t.amount, 0) - txs.filter(t => t.type === 'expense').reduce((s,t) => s + t.amount, 0)); }); const ctx = document.getElementById('netAssetTrendChart').getContext('2d'); if (netAssetTrendChart) netAssetTrendChart.destroy(); const tc = getComputedStyle(document.documentElement); netAssetTrendChart = new Chart(ctx, { type: 'line', data: { labels: ls, datasets: [{ label: '净结余', data: d, borderColor: '#d4a017', backgroundColor: 'rgba(212,160,23,0.15)', fill: true, tension: 0.4, pointRadius: 4, pointBackgroundColor: '#d4a017', borderWidth: 3 }] }, options: { responsive: true, plugins: { legend: { labels: { usePointStyle: true, font: { size: 12 }, color: tc.getPropertyValue('--text-secondary').trim() } } }, scales: { x: { ticks: { font: { size: 10 }, color: tc.getPropertyValue('--text-tertiary').trim() }, grid: { display: false } }, y: { ticks: { font: { size: 10 }, color: tc.getPropertyValue('--text-tertiary').trim() }, grid: { color: tc.getPropertyValue('--border').trim() } } } } }); }
+function renderNetAssetTrendChart(periods) { const ls = [], d = []; periods.forEach(p => { ls.push(p.label); const txs = state.transactions.filter(t => t.date >= p.start && t.date <= p.end); d.push(txs.filter(t => t.type === 'income').reduce((s,t) => s + t.amount, 0) - txs.filter(t => t.type === 'expense').reduce((s,t) => s + t.amount, 0)); }); const ctx = document.getElementById('netAssetTrendChart').getContext('2d'); if (netAssetTrendChart) netAssetTrendChart.destroy(); const tc = getComputedStyle(document.documentElement); netAssetTrendChart = new Chart(ctx, { type: 'line', data: { labels: ls, datasets: [{ label: '净结余', data: d, borderColor: '#6c5ce7', backgroundColor: 'rgba(108,92,231,0.15)', fill: true, tension: 0.4, pointRadius: 4, pointBackgroundColor: '#6c5ce7', borderWidth: 3 }] }, options: { responsive: true, plugins: { legend: { labels: { usePointStyle: true, font: { size: 12 }, color: tc.getPropertyValue('--text-secondary').trim() } } }, scales: { x: { ticks: { font: { size: 10 }, color: tc.getPropertyValue('--text-tertiary').trim() }, grid: { display: false } }, y: { ticks: { font: { size: 10 }, color: tc.getPropertyValue('--text-tertiary').trim() }, grid: { color: tc.getPropertyValue('--border').trim() } } } } }); }
 function renderWealthGrowthChart(periods) { const ls = []; const envDatasets = {}; state.envelopes.forEach(e => { envDatasets[e.id] = { label: getEnvelopeIcon(e) + ' ' + e.name, data: [], backgroundColor: getEnvelopeColor(e) + 'cc', stack: e.type === 'spending' ? 'spending' : 'investing', borderRadius: 3, borderSkipped: false }; }); periods.forEach(p => { ls.push(p.label); state.envelopes.forEach(e => { const txs = state.transactions.filter(t => t.date >= p.start && t.date <= p.end && t.type === 'expense' && t.envelope === e.id); envDatasets[e.id].data.push(txs.reduce((s,t) => s + t.amount, 0)); }); }); const ctx = document.getElementById('wealthGrowthChart').getContext('2d'); if (wealthGrowthChart) wealthGrowthChart.destroy(); const tc = getComputedStyle(document.documentElement); const datasets = []; state.envelopes.filter(e => e.type === 'spending').forEach(e => datasets.push(envDatasets[e.id])); state.envelopes.filter(e => e.type === 'investing').forEach(e => datasets.push(envDatasets[e.id])); wealthGrowthChart = new Chart(ctx, { type: 'bar', data: { labels: ls, datasets: datasets }, options: { responsive: true, plugins: { legend: { labels: { usePointStyle: true, font: { size: 11 }, color: tc.getPropertyValue('--text-secondary').trim() } } }, scales: { x: { stacked: true, ticks: { font: { size: 10 }, color: tc.getPropertyValue('--text-tertiary').trim() }, grid: { display: false } }, y: { stacked: true, ticks: { font: { size: 10 }, color: tc.getPropertyValue('--text-tertiary').trim() }, grid: { color: tc.getPropertyValue('--border').trim() } } } } }); }
 
 // ==================== Settings ====================
 function renderSettings() {
   document.getElementById('themeToggle').className = 'toggle' + (state.theme === 'dark' ? ' active' : '');
+  document.querySelectorAll('.theme-option').forEach(el => {
+    const dot = el.querySelector('div[style*="border-radius:50%"]');
+    if (dot) dot.style.borderColor = el.dataset.t === state.theme ? 'var(--primary)' : 'transparent';
+  });
   const se = state.envelopes.filter(e => e.type === 'spending'), ie = state.envelopes.filter(e => e.type === 'investing');
   document.getElementById('spendingEnvelopeSummary').textContent = formatMoney(se.reduce((s,e) => s + (e.monthlyBudget||0), 0));
   document.getElementById('investingEnvelopeSummary').textContent = formatMoney(ie.reduce((s,e) => s + (e.monthlyBudget||0), 0));
@@ -1072,7 +1105,16 @@ function renderSettings() {
   document.getElementById('expenseCatList').innerHTML = state.expenseCategories.map(c => `<span class="tag-item" onclick="editCategory('${c.id}','expense')"><span class="emoji">${c.icon}</span>${c.name}<span class="remove" onclick="event.stopPropagation();removeCategory('${c.id}','expense')">×</span></span>`).join('') + '<span class="add-tag-btn" onclick="addCategory(\'expense\')">+ 添加分类</span>';
   document.getElementById('incomeCatList').innerHTML = state.incomeCategories.map(c => `<span class="tag-item" onclick="editCategory('${c.id}','income')"><span class="emoji">${c.icon}</span>${c.name}<span class="remove" onclick="event.stopPropagation();removeCategory('${c.id}','income')">×</span></span>`).join('') + '<span class="add-tag-btn" onclick="addCategory(\'income\')">+ 添加分类</span>';
 }
-function toggleTheme() { state.theme = state.theme === 'dark' ? 'light' : 'dark'; document.documentElement.setAttribute('data-theme', state.theme); saveState(); renderSettings(); }
+function setTheme(themeName) {
+  state.theme = themeName;
+  document.documentElement.setAttribute('data-theme', themeName);
+  const themeColors = { light: '#6c5ce7', dark: '#0f0f1a', sakura: '#FFB7C5' };
+  const meta = document.querySelector('meta[name="theme-color"]');
+  if (meta) meta.content = themeColors[themeName] || '#6c5ce7';
+  saveState();
+  renderSettings();
+}
+function toggleTheme() { setTheme(state.theme === 'dark' ? 'light' : 'dark'); }
 
 // ==================== Envelope CRUD ====================
 function addEnvelope() { showEnvelopeModal('添加信封', '', 'spending', 0, (name, type, budget) => { if (!name.trim()) { showToast('请输入信封名称'); return; } state.envelopes.push({ id: 'env_' + Date.now(), name: name.trim(), type, monthlyBudget: budget || 0 }); saveState(); renderSettings(); showToast('信封已添加'); }); }
@@ -1168,7 +1210,7 @@ function importData(event) { const f = event.target.files[0]; if (!f) return; co
 function clearAllData() { document.getElementById('modalTitle').textContent = '确认清空'; document.getElementById('modalBody').innerHTML = '<p style="text-align:center;color:var(--text-secondary);margin-bottom:20px">所有数据将被永久删除，此操作不可恢复。</p><button class="modal-btn danger" onclick="state.accounts=JSON.parse(JSON.stringify(DEFAULT_ACCOUNTS));state.envelopes=JSON.parse(JSON.stringify(DEFAULT_ENVELOPES));state.expenseCategories=[...DEFAULT_EXPENSE_CATS];state.incomeCategories=[...DEFAULT_INCOME_CATS];state.transactions=[];saveState();closeModalDirect();showToast(\'数据已清空\');refreshCurrentPage()">确认清空</button><button class="modal-btn secondary" onclick="closeModalDirect()">取消</button>'; document.getElementById('modalOverlay').classList.add('show'); }
 
 function refreshCurrentPage() { switchPage(currentPage); }
-function init() { loadState(); document.documentElement.setAttribute('data-theme', state.theme); document.getElementById('recordInput').addEventListener('input', handleInputChange); document.getElementById('expenseEnvelopeSelect').addEventListener('change', updateInvestAccountField); document.getElementById('expenseCategorySelect').addEventListener('change', onCategoryChange); renderOverview(); }
+function init() { loadState(); setTheme(state.theme); document.getElementById('recordInput').addEventListener('input', handleInputChange); document.getElementById('expenseEnvelopeSelect').addEventListener('change', updateInvestAccountField); document.getElementById('expenseCategorySelect').addEventListener('change', onCategoryChange); renderOverview(); }
 document.addEventListener('DOMContentLoaded', init);
 </script>
 </body>
