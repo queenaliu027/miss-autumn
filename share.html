@@ -692,9 +692,23 @@ let state = {
 };
 
 function getDemoState() {
+  const now = new Date();
+  const y = now.getFullYear();
+  const m = String(now.getMonth() + 1).padStart(2, '0');
+  function d(day) { return y + '-' + m + '-' + String(day).padStart(2, '0'); }
   return {
-    accounts: [],
-    envelopes: [],
+    accounts: [
+      { id: 'cash', name: '现金', icon: '💵', type: 'asset', balance: 0 },
+      { id: 'bank', name: '储蓄卡', icon: '💰', type: 'asset', balance: 0 },
+      { id: 'credit', name: '信用卡', icon: '💳', type: 'liability', balance: 0 }
+    ],
+    envelopes: [
+      { id: 'fixed', name: '固定支出', type: 'spending', monthlyBudget: 5000 },
+      { id: 'living', name: '生活费', type: 'spending', monthlyBudget: 2500 },
+      { id: 'growth', name: '成长学习', type: 'spending', monthlyBudget: 500 },
+      { id: 'health', name: '健康', type: 'spending', monthlyBudget: 300 },
+      { id: 'finance', name: '理财投资', type: 'investing', monthlyBudget: 1000 }
+    ],
     expenseCategories: [
       { id: 'food', name: '餐饮', icon: '🍜' },
       { id: 'transport', name: '交通', icon: '🚗' },
@@ -711,7 +725,20 @@ function getDemoState() {
       { id: 'invest', name: '投资收益', icon: '📈' },
       { id: 'other_inc', name: '其他', icon: '💎' }
     ],
-    transactions: [],
+    transactions: [
+      { id: 'd01', type: 'income', amount: 8500, category: 'salary', account: 'bank', note: '工资到账', date: d(1), createdAt: Date.now() - 86400000 * 24, envelope: '' },
+      { id: 'd02', type: 'expense', amount: 3200, category: 'housing', envelope: 'fixed', account: 'bank', note: '房租', date: d(1), createdAt: Date.now() - 86400000 * 24 },
+      { id: 'd03', type: 'expense', amount: 35, category: 'food', envelope: 'living', account: 'cash', note: '午餐', date: d(3), createdAt: Date.now() - 86400000 * 22 },
+      { id: 'd04', type: 'expense', amount: 28, category: 'food', envelope: 'living', account: 'credit', note: '咖啡', date: d(5), createdAt: Date.now() - 86400000 * 20 },
+      { id: 'd05', type: 'expense', amount: 89, category: 'transport', envelope: 'living', account: 'cash', note: '地铁充值', date: d(6), createdAt: Date.now() - 86400000 * 19 },
+      { id: 'd06', type: 'expense', amount: 45, category: 'education', envelope: 'growth', account: 'bank', note: '买书', date: d(8), createdAt: Date.now() - 86400000 * 17 },
+      { id: 'd07', type: 'expense', amount: 199, category: 'medical', envelope: 'health', account: 'bank', note: '体检', date: d(10), createdAt: Date.now() - 86400000 * 15 },
+      { id: 'd08', type: 'expense', amount: 1000, category: 'other_exp', envelope: 'finance', account: 'bank', note: '基金定投', date: d(10), createdAt: Date.now() - 86400000 * 15, investAccount: 'bank' },
+      { id: 'd09', type: 'expense', amount: 156, category: 'shopping', envelope: 'living', account: 'credit', note: '日用品', date: d(12), createdAt: Date.now() - 86400000 * 13 },
+      { id: 'd10', type: 'expense', amount: 67, category: 'fun', envelope: 'living', account: 'credit', note: '电影', date: d(14), createdAt: Date.now() - 86400000 * 11 },
+      { id: 'd11', type: 'transfer', amount: 486, account: 'bank', toAccount: 'credit', category: 'transfer', note: '还款', date: d(15), createdAt: Date.now() - 86400000 * 10 },
+      { id: 'd12', type: 'income', amount: 500, category: 'bonus', account: 'bank', note: '项目奖金', date: d(18), createdAt: Date.now() - 86400000 * 7 }
+    ],
     theme: 'light',
     recordType: 'expense'
   };
