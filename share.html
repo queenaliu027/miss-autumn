@@ -642,7 +642,7 @@ body { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', 'PingFang SC'
         <input type="file" id="importFile" accept=".json" style="display:none" onchange="importData(event)">
         <div class="setting-item" onclick="clearAllData()"><div class="left"><span class="icon">🗑️</span><span class="label">清空数据</span></div><div class="right" style="color:var(--expense)"><span>危险操作</span></div></div>
       </div>
-      <div style="text-align:center;padding:20px;color:var(--text-tertiary);font-size:12px">Miss Autumn 记账本 v7.2 · 体验版 · 数据仅供演示</div>
+      <div style="text-align:center;padding:20px;color:var(--text-tertiary);font-size:12px">Miss Autumn 记账本 v7.2 · 体验版</div>
     </div>
   </div>
   <div class="tab-bar">
@@ -682,7 +682,7 @@ const DEFAULT_INCOME_CATS = [
   { id: 'invest', name: '投资收益', icon: '📈' },{ id: 'other_inc', name: '其他', icon: '💎' }
 ];
 
-const DEFAULT_DATA = {"accounts":[{"id":"cash","name":"现金","icon":"💵","type":"asset","balance":0},{"id":"bank","name":"储蓄卡","icon":"💰","type":"asset","balance":0},{"id":"acc_1779083196378","name":"信用卡","icon":"💳","type":"liability","balance":0},{"id":"acc_1779083217881","name":"抖音月付","icon":"💙","type":"liability","balance":0},{"id":"acc_1779083232042","name":"美团月付","icon":"💚","type":"liability","balance":0}],"envelopes":[{"id":"fixed","name":"固定支出","type":"spending","monthlyBudget":9770},{"id":"living","name":"生活费","type":"spending","monthlyBudget":3000},{"id":"growth","name":"成长学习投资","type":"spending","monthlyBudget":500},{"id":"health","name":"健康自我投资","type":"spending","monthlyBudget":500},{"id":"finance","name":"理财投资","type":"investing","monthlyBudget":1500}],"expenseCategories":[{"id":"food","name":"餐饮","icon":"🍜"},{"id":"transport","name":"交通","icon":"🚗"},{"id":"shopping","name":"购物","icon":"🛍️"},{"id":"fun","name":"娱乐","icon":"🎮"},{"id":"housing","name":"居住","icon":"🏠"},{"id":"medical","name":"医疗","icon":"🏥"},{"id":"education","name":"学习/读书/课程","icon":"📚"},{"id":"other_exp","name":"其他","icon":"📦"},{"id":"cat_1778830250280","name":"房贷+家用生活费","icon":"🏠"},{"id":"cat_1778833125113","name":"黄金ETF","icon":"💰"},{"id":"cat_1779089713256","name":"运动","icon":"⚽"}],"incomeCategories":[{"id":"salary","name":"工资","icon":"💰","monthlyBudget":0},{"id":"bonus","name":"奖金","icon":"🎁","monthlyBudget":0},{"id":"invest","name":"投资收益","icon":"📈","monthlyBudget":0},{"id":"other_inc","name":"其他","icon":"💎","monthlyBudget":0}],"transactions":[{"id":"tx_1778830278987_qk7q9","type":"expense","amount":7370,"category":"cat_1778830250280","account":"bank","note":"支出","date":"2026-05-15","createdAt":1778830278987,"envelope":"fixed"},{"id":"tx_1778830295531_k13da","type":"expense","amount":2100,"category":"housing","account":"bank","note":"房租","date":"2026-05-15","createdAt":1778830295531,"envelope":"fixed"},{"id":"tx_1779070557742_gjsms","type":"expense","amount":300,"category":"cat_1778833125113","envelope":"finance","account":"bank","note":"支出","date":"2026-05-18","createdAt":1779070557742,"investAccount":"bank"},{"id":"tx_1779083813583_tilvu","type":"income","amount":14721.08,"category":"salary","account":"income","note":"收入","date":"2026-05-18","createdAt":1779083813583},{"id":"tx_1779084254160_g7l67","type":"expense","amount":1249.24,"category":"other_exp","envelope":"living","account":"acc_1779083196378","note":"支出","date":"2026-05-18","createdAt":1779084254160},{"id":"tx_1779084793733_mixi5","type":"transfer","amount":1249.24,"account":"bank","toAccount":"acc_1779083196378","category":"transfer","note":"还款","date":"2026-05-18","createdAt":1779084793734},{"id":"tx_1779084823137_tdyh2","type":"expense","amount":700,"category":"other_exp","envelope":"living","account":"cash","note":"支出","date":"2026-05-18","createdAt":1779084823137},{"id":"tx_1779084830677_1pje9","type":"transfer","amount":700,"account":"bank","toAccount":"acc_1779083196378","category":"transfer","note":"还款","date":"2026-05-18","createdAt":1779084830677},{"id":"tx_1779084887798_sor40","type":"expense","amount":277.96,"category":"other_exp","envelope":"living","account":"acc_1779083196378","note":"支出","date":"2026-05-18","createdAt":1779084887798},{"id":"tx_1779084905942_rfdlo","type":"transfer","amount":277.96,"account":"bank","toAccount":"acc_1779083217881","category":"transfer","note":"还款","date":"2026-05-18","createdAt":1779084905942},{"id":"tx_1779089033247_b8ptt","type":"transfer","amount":593.45,"account":"bank","toAccount":"acc_1779083232042","category":"transfer","note":"还款","date":"2026-05-18","createdAt":1779089033247},{"id":"tx_1779093380865_sz9oi","type":"expense","amount":199,"category":"cat_1779089713256","envelope":"health","account":"acc_1779083196378","note":"健身房月卡","date":"2026-05-18","createdAt":1779093380865},{"id":"tx_1779093535012_md1go","type":"expense","amount":100,"category":"education","envelope":"growth","account":"bank","note":"西西弗读书卡","date":"2026-05-18","createdAt":1779093535012},{"id":"tx_1779093843243_t4uvm","type":"income","amount":1000,"category":"other_inc","account":"income","note":"父亲转账","date":"2026-05-18","createdAt":1779093843243},{"id":"tx_1779093857206_nj6rr","type":"income","amount":3000,"category":"other_inc","account":"income","note":"母亲转账","date":"2026-05-18","createdAt":1779093857206},{"id":"tx_1779093877320_0jy0m","type":"expense","amount":59,"category":"shopping","envelope":"living","account":"acc_1779083196378","note":"支出","date":"2026-05-18","createdAt":1779093877320},{"id":"tx_1779094125469_8d0w5","type":"expense","amount":547.6299999999999,"category":"food","envelope":"living","account":"bank","note":"支出","date":"2026-05-18","createdAt":1779094125469},{"id":"tx_1779094233107_qv9cz","type":"expense","amount":258.03000000000003,"category":"shopping","envelope":"living","account":"acc_1779083196378","note":"支出","date":"2026-05-18","createdAt":1779094233107},{"id":"tx_1779094277308_l9e30","type":"expense","amount":785,"category":"housing","envelope":"living","account":"bank","note":"搬家+网路费","date":"2026-05-18","createdAt":1779094277308},{"id":"tx_1779094636409_uvya5","type":"expense","amount":1698.6000000000001,"category":"other_exp","envelope":"living","account":"acc_1779083196378","note":"支出","date":"2026-05-18","createdAt":1779094636409},{"id":"tx_1779094663557_6ehv7","type":"income","amount":265,"category":"other_inc","account":"income","note":"二手物品出售","date":"2026-05-18","createdAt":1779094663557},{"id":"tx_1779094766992_n0pel","type":"expense","amount":859,"category":"housing","envelope":"living","account":"acc_1779083196378","note":"空调","date":"2026-05-18","createdAt":1779094766992}],"theme":"light","recordType":"expense"};
+const DEFAULT_DATA = null;
 let state = {
   accounts: JSON.parse(JSON.stringify(DEFAULT_ACCOUNTS)),
   envelopes: JSON.parse(JSON.stringify(DEFAULT_ENVELOPES)),
@@ -692,33 +692,18 @@ let state = {
 };
 
 function getDemoState() {
-  const now = new Date();
-  const y = now.getFullYear();
-  const m = String(now.getMonth() + 1).padStart(2, '0');
-  const today = now.getDate();
-  function d(day) { return y + '-' + m + '-' + String(day).padStart(2, '0'); }
   return {
-    accounts: [
-      { id: 'salary_card', name: '工资卡', icon: '💰', type: 'asset', balance: 25000 },
-      { id: 'invest_acc', name: '理财账户', icon: '🏦', type: 'asset', balance: 50000 },
-      { id: 'credit_card', name: '信用卡', icon: '💳', type: 'liability', balance: -3200 }
-    ],
-    envelopes: [
-      { id: 'living', name: '生活费', type: 'spending', monthlyBudget: 3000 },
-      { id: 'growth', name: '成长', type: 'spending', monthlyBudget: 800 },
-      { id: 'health', name: '健康', type: 'spending', monthlyBudget: 500 },
-      { id: 'finance', name: '理财', type: 'investing', monthlyBudget: 3000 }
-    ],
+    accounts: [],
+    envelopes: [],
     expenseCategories: [
-      { id: 'food', name: '餐饮', icon: '🍜', envelope: 'living' },
-      { id: 'transport', name: '交通', icon: '🚗', envelope: 'living' },
-      { id: 'shopping', name: '购物', icon: '🛍️', envelope: 'living' },
-      { id: 'fun', name: '娱乐', icon: '🎮', envelope: 'living' },
-      { id: 'housing', name: '居住', icon: '🏠', envelope: 'living' },
-      { id: 'medical', name: '医疗', icon: '🏥', envelope: 'health' },
-      { id: 'education', name: '教育', icon: '📚', envelope: 'growth' },
-      { id: 'other_exp', name: '其他', icon: '📦', envelope: 'living' },
-      { id: 'invest_cat', name: '基金定投', icon: '📈', envelope: 'finance' }
+      { id: 'food', name: '餐饮', icon: '🍜' },
+      { id: 'transport', name: '交通', icon: '🚗' },
+      { id: 'shopping', name: '购物', icon: '🛍️' },
+      { id: 'fun', name: '娱乐', icon: '🎮' },
+      { id: 'housing', name: '居住', icon: '🏠' },
+      { id: 'medical', name: '医疗', icon: '🏥' },
+      { id: 'education', name: '教育', icon: '📚' },
+      { id: 'other_exp', name: '其他', icon: '📦' }
     ],
     incomeCategories: [
       { id: 'salary', name: '工资', icon: '💰' },
@@ -726,28 +711,7 @@ function getDemoState() {
       { id: 'invest', name: '投资收益', icon: '📈' },
       { id: 'other_inc', name: '其他', icon: '💎' }
     ],
-    transactions: [
-      { id: 'tx01', type: 'income', amount: 15000, category: 'salary', account: 'salary_card', note: '工资到账', date: d(1), createdAt: Date.now() - 86400000 * 24, envelope: '' },
-      { id: 'tx02', type: 'expense', amount: 35, category: 'food', envelope: 'living', account: 'salary_card', note: '午餐外卖', date: d(2), createdAt: Date.now() - 86400000 * 23 },
-      { id: 'tx03', type: 'expense', amount: 28, category: 'food', envelope: 'living', account: 'credit_card', note: '星巴克咖啡', date: d(3), createdAt: Date.now() - 86400000 * 22 },
-      { id: 'tx04', type: 'expense', amount: 100, category: 'transport', envelope: 'living', account: 'salary_card', note: '地铁充值', date: d(4), createdAt: Date.now() - 86400000 * 21 },
-      { id: 'tx05', type: 'expense', amount: 45, category: 'education', envelope: 'growth', account: 'salary_card', note: '买书《人类简史》', date: d(5), createdAt: Date.now() - 86400000 * 20 },
-      { id: 'tx06', type: 'expense', amount: 199, category: 'education', envelope: 'growth', account: 'salary_card', note: '网课会员', date: d(6), createdAt: Date.now() - 86400000 * 19 },
-      { id: 'tx07', type: 'expense', amount: 389, category: 'other_exp', envelope: 'health', account: 'salary_card', note: '跑步鞋', date: d(7), createdAt: Date.now() - 86400000 * 18 },
-      { id: 'tx08', type: 'expense', amount: 260, category: 'medical', envelope: 'health', account: 'salary_card', note: '体检费用', date: d(8), createdAt: Date.now() - 86400000 * 17 },
-      { id: 'tx09', type: 'expense', amount: 3000, category: 'invest_cat', envelope: 'finance', account: 'salary_card', note: '基金定投', date: d(10), createdAt: Date.now() - 86400000 * 15, investAccount: 'invest_acc' },
-      { id: 'tx10', type: 'expense', amount: 186, category: 'food', envelope: 'living', account: 'salary_card', note: '超市购物', date: d(11), createdAt: Date.now() - 86400000 * 14 },
-      { id: 'tx11', type: 'expense', amount: 168, category: 'food', envelope: 'living', account: 'credit_card', note: '火锅聚餐', date: d(12), createdAt: Date.now() - 86400000 * 13 },
-      { id: 'tx12', type: 'expense', amount: 42, category: 'food', envelope: 'living', account: 'salary_card', note: '水果', date: d(13), createdAt: Date.now() - 86400000 * 12 },
-      { id: 'tx13', type: 'expense', amount: 18, category: 'food', envelope: 'living', account: 'credit_card', note: '奶茶', date: d(14), createdAt: Date.now() - 86400000 * 11 },
-      { id: 'tx14', type: 'expense', amount: 23, category: 'transport', envelope: 'living', account: 'salary_card', note: '滴滴打车', date: d(15), createdAt: Date.now() - 86400000 * 10 },
-      { id: 'tx15', type: 'expense', amount: 299, category: 'shopping', envelope: 'living', account: 'credit_card', note: '衣服', date: d(16), createdAt: Date.now() - 86400000 * 9 },
-      { id: 'tx16', type: 'expense', amount: 67, category: 'other_exp', envelope: 'living', account: 'salary_card', note: '日用品', date: d(18), createdAt: Date.now() - 86400000 * 7 },
-      { id: 'tx17', type: 'expense', amount: 50, category: 'other_exp', envelope: 'living', account: 'salary_card', note: '话费充值', date: d(19), createdAt: Date.now() - 86400000 * 6 },
-      { id: 'tx18', type: 'expense', amount: 35, category: 'medical', envelope: 'health', account: 'salary_card', note: '药店买药', date: d(20), createdAt: Date.now() - 86400000 * 5 },
-      { id: 'tx19', type: 'expense', amount: 68, category: 'other_exp', envelope: 'living', account: 'salary_card', note: '理发', date: d(22), createdAt: Date.now() - 86400000 * 3 },
-      { id: 'tx20', type: 'expense', amount: 59, category: 'fun', envelope: 'living', account: 'credit_card', note: '电影票', date: d(Math.min(today, 28)), createdAt: Date.now() - 86400000 * 1 }
-    ],
+    transactions: [],
     theme: 'light',
     recordType: 'expense'
   };
