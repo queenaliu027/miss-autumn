@@ -365,9 +365,9 @@ body { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', 'PingFang SC'
 .voice-indicator.show { display: flex; }
 .voice-wave { display: flex; align-items: center; gap: 3px; height: 20px; }
 .voice-wave span { width: 3px; height: 8px; background: var(--expense); border-radius: 2px; animation: wave 0.6s infinite ease-in-out; }
-.period-tabs { display: flex; gap: 8px; margin-bottom: 16px; }
-.period-tab { padding: 8px 16px; border-radius: 20px; border: none; background: var(--bg-input); color: var(--text-secondary); font-size: 13px; cursor: pointer; font-family: inherit; }
-.period-tab.active { background: var(--primary); color: #fff; }
+.period-tabs { display: flex; gap: 0; margin-bottom: 16px; background: var(--bg-input); border-radius: 20px; padding: 3px; }
+.period-tab { padding: 6px 14px; border-radius: 18px; border: none; background: transparent; color: var(--text-secondary); font-size: 13px; cursor: pointer; font-family: inherit; flex: 1; text-align: center; transition: all 0.2s; }
+.period-tab.active { background: var(--primary); color: #fff; box-shadow: 0 1px 3px rgba(0,0,0,0.15); }
 .stat-sub-tabs { display: flex; gap: 0; margin-bottom: 16px; background: var(--bg-input); border-radius: var(--radius-sm); padding: 3px; }
 .stat-sub-tab { flex: 1; padding: 8px 4px; border: none; background: none; border-radius: 8px; font-size: 13px; font-weight: 500; cursor: pointer; color: var(--text-secondary); font-family: inherit; text-align: center; }
 .stat-sub-tab.active { background: var(--primary); color: #fff; }
@@ -531,9 +531,10 @@ body { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', 'PingFang SC'
     <div class="page" id="page-stats">
       <div class="page-header"><div>📊 统计</div></div>
       <div class="period-tabs">
-        <button class="period-tab active" onclick="setStatPeriod('month',this)">月度</button>
-        <button class="period-tab" onclick="setStatPeriod('quarter',this)">季度</button>
-        <button class="period-tab" onclick="setStatPeriod('year',this)">年度</button>
+        <button class="period-tab" onclick="setStatPeriod('day',this)">日</button>
+        <button class="period-tab" onclick="setStatPeriod('week',this)">周</button>
+        <button class="period-tab active" onclick="setStatPeriod('month',this)">月</button>
+        <button class="period-tab" onclick="setStatPeriod('year',this)">年</button>
       </div>
       <div class="stat-sub-tabs">
         <button class="stat-sub-tab active" onclick="setStatSubTab('charts',this)">图表分析</button>
@@ -557,9 +558,10 @@ body { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', 'PingFang SC'
     <div class="page" id="page-wealth">
       <div class="page-header"><div>💎 财富看板</div></div>
       <div class="period-tabs">
-        <button class="period-tab active" onclick="setStatPeriod('month',this)">月度</button>
-        <button class="period-tab" onclick="setStatPeriod('quarter',this)">季度</button>
-        <button class="period-tab" onclick="setStatPeriod('year',this)">年度</button>
+        <button class="period-tab" onclick="setStatPeriod('day',this)">日</button>
+        <button class="period-tab" onclick="setStatPeriod('week',this)">周</button>
+        <button class="period-tab active" onclick="setStatPeriod('month',this)">月</button>
+        <button class="period-tab" onclick="setStatPeriod('year',this)">年</button>
       </div>
       <div class="wealth-hero" id="wealthHero"></div>
       <div id="wealthCompareSection"></div>
@@ -1076,21 +1078,23 @@ function submitRecord() {
 function toggleVoice() { if (isRecording) { if (recognition) { recognition.stop(); recognition = null; } isRecording = false; document.getElementById('micBtn').classList.remove('recording'); document.getElementById('micBtn').textContent = '🎙️'; document.getElementById('voiceIndicator').classList.remove('show'); return; } const SR = window.SpeechRecognition || window.webkitSpeechRecognition; if (!SR) { showToast('浏览器不支持语音识别'); return; } recognition = new SR(); recognition.lang = 'zh-CN'; recognition.continuous = false; recognition.interimResults = true; recognition.onstart = () => { isRecording = true; document.getElementById('micBtn').classList.add('recording'); document.getElementById('micBtn').textContent = '⏹️'; document.getElementById('voiceIndicator').classList.add('show'); }; recognition.onresult = (e) => { let t = ''; for (let i = e.resultIndex; i < e.results.length; i++) t += e.results[i][0].transcript; document.getElementById('recordInput').value = t; handleInputChange(); }; recognition.onend = () => { isRecording = false; document.getElementById('micBtn').classList.remove('recording'); document.getElementById('micBtn').textContent = '🎙️'; document.getElementById('voiceIndicator').classList.remove('show'); }; recognition.onerror = (e) => { isRecording = false; document.getElementById('micBtn').classList.remove('recording'); document.getElementById('micBtn').textContent = '🎙️'; document.getElementById('voiceIndicator').classList.remove('show'); showToast('语音识别出错'); }; recognition.start(); }
 
 // ==================== Stats ====================
-function setStatPeriod(p, btn) { currentStatPeriod = p; document.querySelectorAll('.period-tab').forEach(t => t.classList.remove('active')); document.querySelectorAll('.period-tab').forEach(t => { if (t.textContent.trim() === (p === 'month' ? '月度' : p === 'quarter' ? '季度' : '年度')) t.classList.add('active'); }); if (currentPage === 'stats') renderStats(); if (currentPage === 'wealth') renderWealth(); }
+function setStatPeriod(p, btn) { currentStatPeriod = p; document.querySelectorAll('.period-tab').forEach(t => t.classList.remove('active')); btn.classList.add('active'); if (currentPage === 'stats') renderStats(); if (currentPage === 'wealth') renderWealth(); }
 function setStatSubTab(tab, btn) { currentStatSubTab = tab; document.querySelectorAll('.stat-sub-tab').forEach(t => t.classList.remove('active')); btn.classList.add('active'); document.getElementById('statChartsSection').style.display = tab === 'charts' ? 'block' : 'none'; document.getElementById('statBudgetSection').style.display = tab === 'budget' ? 'block' : 'none'; if (tab === 'budget') renderBudgetAnalysis(); }
 
 function getStatPeriodRange(period) {
   const now = new Date();
-  if (period === 'month') {
+  const fmt = (d) => `${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,'0')}-${String(d.getDate()).padStart(2,'0')}`;
+  if (period === 'day') {
+    const s = fmt(now);
+    return { start: s, end: s };
+  } else if (period === 'week') {
+    const dow = now.getDay() || 7;
+    const mon = new Date(now); mon.setDate(now.getDate() - dow + 1);
+    const sun = new Date(mon); sun.setDate(mon.getDate() + 6);
+    return { start: fmt(mon), end: fmt(sun) };
+  } else if (period === 'month') {
     const s = `${now.getFullYear()}-${String(now.getMonth()+1).padStart(2,'0')}-01`;
     const ed = new Date(now.getFullYear(), now.getMonth()+1, 0);
-    const e = `${ed.getFullYear()}-${String(ed.getMonth()+1).padStart(2,'0')}-${String(ed.getDate()).padStart(2,'0')}`;
-    return { start: s, end: e };
-  } else if (period === 'quarter') {
-    const cq = Math.floor(now.getMonth()/3);
-    const qm = cq * 3;
-    const s = `${now.getFullYear()}-${String(qm+1).padStart(2,'0')}-01`;
-    const ed = new Date(now.getFullYear(), qm+3, 0);
     const e = `${ed.getFullYear()}-${String(ed.getMonth()+1).padStart(2,'0')}-${String(ed.getDate()).padStart(2,'0')}`;
     return { start: s, end: e };
   } else {
@@ -1099,19 +1103,20 @@ function getStatPeriodRange(period) {
 }
 function getStatPrevPeriodRange(period) {
   const now = new Date();
-  if (period === 'month') {
+  const fmt = (d) => `${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,'0')}-${String(d.getDate()).padStart(2,'0')}`;
+  if (period === 'day') {
+    const yd = new Date(now); yd.setDate(now.getDate()-1);
+    const s = fmt(yd);
+    return { start: s, end: s };
+  } else if (period === 'week') {
+    const dow = now.getDay() || 7;
+    const lastMon = new Date(now); lastMon.setDate(now.getDate() - dow + 1 - 7);
+    const lastSun = new Date(lastMon); lastSun.setDate(lastMon.getDate() + 6);
+    return { start: fmt(lastMon), end: fmt(lastSun) };
+  } else if (period === 'month') {
     const pm = new Date(now.getFullYear(), now.getMonth()-1, 1);
     const s = `${pm.getFullYear()}-${String(pm.getMonth()+1).padStart(2,'0')}-01`;
     const ed = new Date(pm.getFullYear(), pm.getMonth()+1, 0);
-    const e = `${ed.getFullYear()}-${String(ed.getMonth()+1).padStart(2,'0')}-${String(ed.getDate()).padStart(2,'0')}`;
-    return { start: s, end: e };
-  } else if (period === 'quarter') {
-    const cq = Math.floor(now.getMonth()/3);
-    let pq = cq - 1, y = now.getFullYear();
-    if (pq < 0) { pq = 3; y--; }
-    const qm = pq * 3;
-    const s = `${y}-${String(qm+1).padStart(2,'0')}-01`;
-    const ed = new Date(y, qm+3, 0);
     const e = `${ed.getFullYear()}-${String(ed.getMonth()+1).padStart(2,'0')}-${String(ed.getDate()).padStart(2,'0')}`;
     return { start: s, end: e };
   } else {
@@ -1121,21 +1126,23 @@ function getStatPrevPeriodRange(period) {
 }
 function getStatPeriodsThisYear(dim) {
   const now = new Date(), y = now.getFullYear(), ps = [];
-  if (dim === 'month') {
+  const fmt = (d) => `${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,'0')}-${String(d.getDate()).padStart(2,'0')}`;
+  if (dim === 'day') {
+    for (let i = 6; i >= 0; i--) { const d = new Date(now); d.setDate(now.getDate()-i); const ds = fmt(d); ps.push({ start: ds, end: ds, label: `${d.getMonth()+1}/${d.getDate()}` }); }
+  } else if (dim === 'week') {
+    const dow = now.getDay() || 7;
+    const weeksFromStart = Math.ceil((now.getDate() + new Date(y, now.getMonth(), 1).getDay()) / 7);
+    for (let w = 0; w < weeksFromStart; w++) {
+      const mon = new Date(y, now.getMonth(), 1 + w * 7 - (new Date(y, now.getMonth(), 1).getDay() || 7) + 1);
+      const sun = new Date(mon); sun.setDate(mon.getDate() + 6);
+      ps.push({ start: fmt(mon), end: fmt(sun), label: `第${w+1}周` });
+    }
+  } else if (dim === 'month') {
     for (let m = 0; m <= now.getMonth(); m++) {
       const s = `${y}-${String(m+1).padStart(2,'0')}-01`;
       const ed = new Date(y, m+1, 0);
       const e = `${ed.getFullYear()}-${String(ed.getMonth()+1).padStart(2,'0')}-${String(ed.getDate()).padStart(2,'0')}`;
       ps.push({ start: s, end: e, label: `${m+1}月` });
-    }
-  } else if (dim === 'quarter') {
-    const cq = Math.floor(now.getMonth() / 3);
-    for (let q = 0; q <= cq; q++) {
-      const qm = q * 3;
-      const s = `${y}-${String(qm+1).padStart(2,'0')}-01`;
-      const ed = new Date(y, qm+3, 0);
-      const e = `${ed.getFullYear()}-${String(ed.getMonth()+1).padStart(2,'0')}-${String(ed.getDate()).padStart(2,'0')}`;
-      ps.push({ start: s, end: e, label: `Q${q+1}` });
     }
   } else {
     ps.push({ start: `${y}-01-01`, end: `${y}-12-31`, label: `${y}` });
@@ -1197,8 +1204,13 @@ function renderExpenseChart(txs) {
 
 function renderTrendChart(txs) {
   const now = new Date(); let labels = [], incD = [], spdD = [], invD = [];
-  if (currentStatPeriod === 'month') { for (let i = 29; i >= 0; i--) { const d = new Date(now); d.setDate(d.getDate()-i); const ds = d.toISOString().split('T')[0]; labels.push(`${d.getMonth()+1}/${d.getDate()}`); const dt = txs.filter(t => t.date === ds); incD.push(dt.filter(t => t.type === 'income').reduce((s,t) => s + t.amount, 0)); spdD.push(dt.filter(t => t.type === 'expense' && getEnvelopeInfo(t.envelope).type === 'spending').reduce((s,t) => s + t.amount, 0)); invD.push(dt.filter(t => t.type === 'expense' && getEnvelopeInfo(t.envelope).type === 'investing').reduce((s,t) => s + t.amount, 0)); } }
-  else if (currentStatPeriod === 'quarter') { const ms = {}; txs.forEach(t => { const m = t.date.substring(0,7); if (!ms[m]) ms[m] = { income: 0, spending: 0, invest: 0 }; if (t.type === 'income') ms[m].income += t.amount; if (t.type === 'expense') { if (getEnvelopeInfo(t.envelope).type === 'spending') ms[m].spending += t.amount; else ms[m].invest += t.amount; } }); const sorted = Object.keys(ms).sort(); labels = sorted.map(m => m.substring(5)); incD = sorted.map(m => ms[m].income); spdD = sorted.map(m => ms[m].spending); invD = sorted.map(m => ms[m].invest); }
+  if (currentStatPeriod === 'day') {
+    for (let h = 0; h < 24; h++) { labels.push(`${h}:00`); const dt = txs.filter(t => { const d = new Date(t.date + 'T' + String(h).padStart(2,'0')); return t.date === now.toISOString().split('T')[0]; }); incD.push(h === 0 ? txs.filter(t => t.type === 'income').reduce((s,t) => s + t.amount, 0) : 0); spdD.push(h === 0 ? txs.filter(t => t.type === 'expense' && getEnvelopeInfo(t.envelope).type === 'spending').reduce((s,t) => s + t.amount, 0) : 0); invD.push(h === 0 ? txs.filter(t => t.type === 'expense' && getEnvelopeInfo(t.envelope).type === 'investing').reduce((s,t) => s + t.amount, 0) : 0); }
+    labels = ['今日']; incD = [txs.filter(t => t.type === 'income').reduce((s,t) => s + t.amount, 0)]; spdD = [txs.filter(t => t.type === 'expense' && getEnvelopeInfo(t.envelope).type === 'spending').reduce((s,t) => s + t.amount, 0)]; invD = [txs.filter(t => t.type === 'expense' && getEnvelopeInfo(t.envelope).type === 'investing').reduce((s,t) => s + t.amount, 0)];
+  } else if (currentStatPeriod === 'week') {
+    const dow = now.getDay() || 7;
+    for (let i = 1; i <= 7; i++) { const d = new Date(now); d.setDate(now.getDate() - dow + i); const ds = d.toISOString().split('T')[0]; labels.push(['日','一','二','三','四','五','六'][d.getDay()]); const dt = txs.filter(t => t.date === ds); incD.push(dt.filter(t => t.type === 'income').reduce((s,t) => s + t.amount, 0)); spdD.push(dt.filter(t => t.type === 'expense' && getEnvelopeInfo(t.envelope).type === 'spending').reduce((s,t) => s + t.amount, 0)); invD.push(dt.filter(t => t.type === 'expense' && getEnvelopeInfo(t.envelope).type === 'investing').reduce((s,t) => s + t.amount, 0)); }
+  } else if (currentStatPeriod === 'month') { for (let i = 29; i >= 0; i--) { const d = new Date(now); d.setDate(d.getDate()-i); const ds = d.toISOString().split('T')[0]; labels.push(`${d.getMonth()+1}/${d.getDate()}`); const dt = txs.filter(t => t.date === ds); incD.push(dt.filter(t => t.type === 'income').reduce((s,t) => s + t.amount, 0)); spdD.push(dt.filter(t => t.type === 'expense' && getEnvelopeInfo(t.envelope).type === 'spending').reduce((s,t) => s + t.amount, 0)); invD.push(dt.filter(t => t.type === 'expense' && getEnvelopeInfo(t.envelope).type === 'investing').reduce((s,t) => s + t.amount, 0)); } }
   else { const ms = {}; txs.forEach(t => { const m = t.date.substring(0,7); if (!ms[m]) ms[m] = { income: 0, spending: 0, invest: 0 }; if (t.type === 'income') ms[m].income += t.amount; if (t.type === 'expense') { if (getEnvelopeInfo(t.envelope).type === 'spending') ms[m].spending += t.amount; else ms[m].invest += t.amount; } }); const sorted = Object.keys(ms).sort(); labels = sorted.map(m => m.substring(5)); incD = sorted.map(m => ms[m].income); spdD = sorted.map(m => ms[m].spending); invD = sorted.map(m => ms[m].invest); }
   const ctx = document.getElementById('trendChart').getContext('2d'); if (trendChart) trendChart.destroy();
   const tc = getComputedStyle(document.documentElement); const ts = tc.getPropertyValue('--text-secondary').trim(), tt = tc.getPropertyValue('--text-tertiary').trim(), bc = tc.getPropertyValue('--border').trim();
@@ -1206,7 +1218,7 @@ function renderTrendChart(txs) {
 }
 
 // ==================== Wealth ====================
-function getWealthPeriods(dim) { const now = new Date(), ps = [], cnt = dim === 'month' ? 12 : (dim === 'quarter' ? 8 : 5); for (let i = cnt - 1; i >= 0; i--) { let s, e, l; if (dim === 'month') { const d = new Date(now.getFullYear(), now.getMonth()-i, 1); s = `${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,'0')}-01`; const ed = new Date(d.getFullYear(), d.getMonth()+1, 0); e = `${ed.getFullYear()}-${String(ed.getMonth()+1).padStart(2,'0')}-${String(ed.getDate()).padStart(2,'0')}`; l = `${d.getFullYear()}/${d.getMonth()+1}`; } else if (dim === 'quarter') { const cq = Math.floor(now.getMonth()/3), qi = cq-i, yo = Math.floor(qi/4), qy = ((qi%4)+4)%4, y = now.getFullYear()+yo, qm = qy*3; s = `${y}-${String(qm+1).padStart(2,'0')}-01`; const ed = new Date(y, qm+3, 0); e = `${ed.getFullYear()}-${String(ed.getMonth()+1).padStart(2,'0')}-${String(ed.getDate()).padStart(2,'0')}`; l = `${y} Q${qy+1}`; } else { const y = now.getFullYear()-i; s = `${y}-01-01`; e = `${y}-12-31`; l = `${y}`; } ps.push({ start: s, end: e, label: l }); } return ps; }
+function getWealthPeriods(dim) { const now = new Date(), ps = [], fmt = (d) => `${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,'0')}-${String(d.getDate()).padStart(2,'0')}`, cnt = dim === 'day' ? 7 : (dim === 'week' ? 8 : (dim === 'month' ? 12 : 5)); for (let i = cnt - 1; i >= 0; i--) { let s, e, l; if (dim === 'day') { const d = new Date(now); d.setDate(now.getDate()-i); s = fmt(d); e = s; l = `${d.getMonth()+1}/${d.getDate()}`; } else if (dim === 'week') { const cur = new Date(now); cur.setDate(now.getDate() - i * 7); const dow = cur.getDay() || 7; const mon = new Date(cur); mon.setDate(cur.getDate() - dow + 1); const sun = new Date(mon); sun.setDate(mon.getDate() + 6); s = fmt(mon); e = fmt(sun); l = `${mon.getMonth()+1}/${mon.getDate()}`; } else if (dim === 'month') { const d = new Date(now.getFullYear(), now.getMonth()-i, 1); s = `${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,'0')}-01`; const ed = new Date(d.getFullYear(), d.getMonth()+1, 0); e = `${ed.getFullYear()}-${String(ed.getMonth()+1).padStart(2,'0')}-${String(ed.getDate()).padStart(2,'0')}`; l = `${d.getFullYear()}/${d.getMonth()+1}`; } else { const y = now.getFullYear()-i; s = `${y}-01-01`; e = `${y}-12-31`; l = `${y}`; } ps.push({ start: s, end: e, label: l }); } return ps; }
 function getPeriodTxData(s, e) { const txs = state.transactions.filter(t => t.date >= s && t.date <= e); const income = txs.filter(t => t.type === 'income').reduce((s,t) => s + t.amount, 0), spending = txs.filter(t => t.type === 'expense' && getEnvelopeInfo(t.envelope).type === 'spending').reduce((s,t) => s + t.amount, 0), invest = txs.filter(t => t.type === 'expense' && getEnvelopeInfo(t.envelope).type === 'investing').reduce((s,t) => s + t.amount, 0); return { income, spending, invest, surplus: income - spending - invest }; }
 
 function renderWealth() {
@@ -1223,7 +1235,7 @@ function renderWealth() {
     else { investBalance += b; investingEnvs.push({ ...e, balance: b, monthUsed, color, icon }); }
   });
   const totalBalance = spendingBalance + investBalance;
-  const pl = currentStatPeriod === 'month' ? '本月' : (currentStatPeriod === 'quarter' ? '本季度' : '本年度');
+  const pl = currentStatPeriod === 'day' ? '今日' : (currentStatPeriod === 'week' ? '本周' : (currentStatPeriod === 'month' ? '本月' : '本年度'));
   // Build spending envelope card
   let spendCardHtml = '';
   if (spendingEnvs.length) {
@@ -1252,7 +1264,7 @@ function renderWealth() {
   }
   document.getElementById('wealthHero').innerHTML = `<div class="hero-label">${pl}净结余</div><div class="hero-amount" style="color:#fff">${cd.surplus>=0?'+':'-'}${formatMoney(Math.abs(cd.surplus))}</div><div style="font-size:11px;color:rgba(255,255,255,0.6);text-align:center;margin-top:-4px;margin-bottom:4px">= 收入${formatMoney(cd.income)} - 消费${formatMoney(cd.spending)} - 投资${formatMoney(cd.invest)}</div><div class="hero-row"><div class="hero-stat"><div class="label">消费信封余额</div><div class="value">${formatMoney(spendingBalance)}</div></div><div class="hero-stat"><div class="label">投资信封余额</div><div class="value">${formatMoney(investBalance)}</div></div><div class="hero-stat"><div class="label">收入</div><div class="value">${formatMoney(cd.income)}</div></div></div>${spendCardHtml}${investCardHtml}`;
   const ce = document.getElementById('wealthCompareSection');
-  if (pd) { const pnl = currentStatPeriod === 'month' ? '上月' : (currentStatPeriod === 'quarter' ? '上季度' : '去年'); function cc(c,p) { if (p===0) return c>0?100:(c<0?-100:0); return ((c-p)/Math.abs(p)*100).toFixed(1); } function ct(v) { if (Math.abs(v)<0.1) return '<span class="wc-change neutral">持平</span>'; return v>0?`<span class="wc-change up">↑${Math.abs(v)}%</span>`:`<span class="wc-change down">↓${Math.abs(v)}%</span>`; }
+  if (pd) { const pnl = currentStatPeriod === 'day' ? '昨日' : (currentStatPeriod === 'week' ? '上周' : (currentStatPeriod === 'month' ? '上月' : '去年')); function cc(c,p) { if (p===0) return c>0?100:(c<0?-100:0); return ((c-p)/Math.abs(p)*100).toFixed(1); } function ct(v) { if (Math.abs(v)<0.1) return '<span class="wc-change neutral">持平</span>'; return v>0?`<span class="wc-change up">↑${Math.abs(v)}%</span>`:`<span class="wc-change down">↓${Math.abs(v)}%</span>`; }
   ce.innerHTML = `<div class="wealth-compare-card"><div><div class="wc-label">收入 vs ${pnl}</div><div style="font-size:12px;color:var(--text-tertiary)">${pnl} ${formatMoney(pd.income)}</div></div><div style="display:flex;align-items:center"><span class="wc-value income">${formatMoney(cd.income)}</span>${ct(cc(cd.income,pd.income))}</div></div><div class="wealth-compare-card"><div><div class="wc-label">消费 vs ${pnl}</div><div style="font-size:12px;color:var(--text-tertiary)">${pnl} ${formatMoney(pd.spending)}</div></div><div style="display:flex;align-items:center"><span class="wc-value expense">${formatMoney(cd.spending)}</span>${ct(cc(cd.spending,pd.spending))}</div></div><div class="wealth-compare-card"><div><div class="wc-label">投资 vs ${pnl}</div><div style="font-size:12px;color:var(--text-tertiary)">${pnl} ${formatMoney(pd.invest)}</div></div><div style="display:flex;align-items:center"><span class="wc-value" style="color:var(--invest-color)">${formatMoney(cd.invest)}</span>${ct(cc(cd.invest,pd.invest))}</div></div><div class="wealth-compare-card"><div><div class="wc-label">净结余 vs ${pnl}</div><div style="font-size:12px;color:var(--text-tertiary)">${pnl} ${formatMoney(pd.surplus)}</div></div><div style="display:flex;align-items:center"><span class="wc-value ${cd.surplus>=0?'income':'expense'}">${cd.surplus>=0?'+':'-'}${formatMoney(Math.abs(cd.surplus))}</span>${ct(cc(cd.surplus,pd.surplus))}</div></div>`;
   } else ce.innerHTML = '<div class="wealth-compare-card"><div class="wc-label" style="text-align:center;width:100%">暂无上一周期数据</div></div>';
   renderSpendingInvestChart(cd); renderNetAssetTrendChart(ps); renderWealthGrowthChart(ps);
