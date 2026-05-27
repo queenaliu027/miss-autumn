@@ -368,6 +368,32 @@ body { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', 'PingFang SC'
 .period-tabs { display: flex; gap: 0; margin-bottom: 16px; background: var(--bg-input); border-radius: 20px; padding: 3px; }
 .period-tab { padding: 6px 14px; border-radius: 18px; border: none; background: transparent; color: var(--text-secondary); font-size: 13px; cursor: pointer; font-family: inherit; flex: 1; text-align: center; transition: all 0.2s; }
 .period-tab.active { background: var(--primary); color: #fff; box-shadow: 0 1px 3px rgba(0,0,0,0.15); }
+.calendar-nav { display: flex; align-items: center; justify-content: space-between; padding: 8px 4px; margin-bottom: 8px; }
+.calendar-nav span { font-size: 15px; font-weight: 600; color: var(--text-primary); }
+.cal-nav-btn { background: none; border: none; font-size: 16px; color: var(--text-secondary); cursor: pointer; padding: 4px 12px; border-radius: 8px; }
+.cal-nav-btn:active { background: var(--bg-input); }
+.calendar-grid { display: grid; grid-template-columns: repeat(7, 1fr); gap: 3px; margin-bottom: 12px; }
+.cal-header { text-align: center; font-size: 11px; color: var(--text-tertiary); padding: 4px 0 6px; font-weight: 500; }
+.cal-cell { text-align: center; padding: 4px 2px; border-radius: 8px; min-height: 52px; display: flex; flex-direction: column; align-items: center; justify-content: center; cursor: pointer; transition: all 0.15s; }
+.cal-cell:hover { background: var(--bg-input); }
+.cal-cell.empty { cursor: default; }
+.cal-cell.empty:hover { background: transparent; }
+.cal-cell .cal-date { font-size: 12px; color: var(--text-secondary); margin-bottom: 2px; line-height: 1; }
+.cal-cell .cal-amount { font-size: 10px; line-height: 1.2; font-weight: 500; }
+.cal-cell.positive { background: rgba(0,184,148,0.1); }
+.cal-cell.positive .cal-amount { color: #00b894; }
+.cal-cell.negative { background: rgba(225,112,85,0.1); }
+.cal-cell.negative .cal-amount { color: #e17055; }
+.cal-cell.today { border: 2px solid var(--primary); }
+.cal-cell.today .cal-date { color: var(--primary); font-weight: 700; }
+.cal-cell.selected { background: var(--primary); }
+.cal-cell.selected .cal-date, .cal-cell.selected .cal-amount { color: #fff !important; }
+.cal-legend { display: flex; gap: 16px; justify-content: center; margin-bottom: 16px; font-size: 11px; color: var(--text-tertiary); }
+.cal-legend-item { display: flex; align-items: center; gap: 4px; }
+.cal-dot { width: 8px; height: 8px; border-radius: 50%; display: inline-block; }
+.cal-dot.positive { background: rgba(0,184,148,0.3); }
+.cal-dot.negative { background: rgba(225,112,85,0.3); }
+.cal-dot.today { background: var(--primary); }
 .stat-sub-tabs { display: flex; gap: 0; margin-bottom: 16px; background: var(--bg-input); border-radius: var(--radius-sm); padding: 3px; }
 .stat-sub-tab { flex: 1; padding: 8px 4px; border: none; background: none; border-radius: 8px; font-size: 13px; font-weight: 500; cursor: pointer; color: var(--text-secondary); font-family: inherit; text-align: center; }
 .stat-sub-tab.active { background: var(--primary); color: #fff; }
@@ -537,10 +563,30 @@ body { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', 'PingFang SC'
         <button class="period-tab" onclick="setStatPeriod('year',this)">年</button>
       </div>
       <div class="stat-sub-tabs">
-        <button class="stat-sub-tab active" onclick="setStatSubTab('charts',this)">图表分析</button>
+        <button class="stat-sub-tab active" onclick="setStatSubTab('calendar',this)">日历</button>
+        <button class="stat-sub-tab" onclick="setStatSubTab('charts',this)">图表分析</button>
         <button class="stat-sub-tab" onclick="setStatSubTab('budget',this)">预算分析</button>
       </div>
-      <div id="statChartsSection">
+      <div id="statCalendarSection">
+        <div class="calendar-nav">
+          <button class="cal-nav-btn" onclick="changeCalMonth(-1)">◀</button>
+          <span id="calMonthLabel">2026年5月</span>
+          <button class="cal-nav-btn" onclick="changeCalMonth(1)">▶</button>
+        </div>
+        <div class="calendar-grid" id="calendarGrid"></div>
+        <div class="cal-legend">
+          <span class="cal-legend-item"><span class="cal-dot positive"></span>结余为正</span>
+          <span class="cal-legend-item"><span class="cal-dot negative"></span>结余为负</span>
+          <span class="cal-legend-item"><span class="cal-dot today"></span>今天</span>
+        </div>
+        <div class="stats-row-4" id="calSummary">
+          <div class="stat-card"><div class="label">收入</div><div class="value income" id="calIncome">¥0</div></div>
+          <div class="stat-card"><div class="label">消费</div><div class="value expense" id="calSpending">¥0</div></div>
+          <div class="stat-card"><div class="label">投资</div><div class="value invest" id="calInvest">¥0</div></div>
+          <div class="stat-card"><div class="label">结余</div><div class="value" id="calSurplus">¥0</div></div>
+        </div>
+      </div>
+      <div id="statChartsSection" style="display:none">
         <div class="stats-row-4">
           <div class="stat-card"><div class="label">收入</div><div class="value income" id="statIncome">¥0</div></div>
           <div class="stat-card"><div class="label">消费</div><div class="value expense" id="statSpending">¥0</div></div>
@@ -859,7 +905,7 @@ function parseInput(text) {
 }
 
 // ==================== UI ====================
-let currentPage = 'overview', currentStatPeriod = 'month', currentStatSubTab = 'charts';
+let currentPage = 'overview', currentStatPeriod = 'month', currentStatSubTab = 'calendar', calViewYear = new Date().getFullYear(), calViewMonth = new Date().getMonth();
 let isRecording = false, recognition = null;
 let expenseChart = null, trendChart = null, netAssetTrendChart = null, wealthGrowthChart = null, spendingInvestChart = null;
 
@@ -1079,7 +1125,7 @@ function toggleVoice() { if (isRecording) { if (recognition) { recognition.stop(
 
 // ==================== Stats ====================
 function setStatPeriod(p, btn) { currentStatPeriod = p; document.querySelectorAll('.period-tab').forEach(t => t.classList.remove('active')); btn.classList.add('active'); if (currentPage === 'stats') renderStats(); if (currentPage === 'wealth') renderWealth(); }
-function setStatSubTab(tab, btn) { currentStatSubTab = tab; document.querySelectorAll('.stat-sub-tab').forEach(t => t.classList.remove('active')); btn.classList.add('active'); document.getElementById('statChartsSection').style.display = tab === 'charts' ? 'block' : 'none'; document.getElementById('statBudgetSection').style.display = tab === 'budget' ? 'block' : 'none'; if (tab === 'budget') renderBudgetAnalysis(); }
+function setStatSubTab(tab, btn) { currentStatSubTab = tab; document.querySelectorAll('.stat-sub-tab').forEach(t => t.classList.remove('active')); btn.classList.add('active'); document.getElementById('statCalendarSection').style.display = tab === 'calendar' ? 'block' : 'none'; document.getElementById('statChartsSection').style.display = tab === 'charts' ? 'block' : 'none'; document.getElementById('statBudgetSection').style.display = tab === 'budget' ? 'block' : 'none'; if (tab === 'calendar') renderCalendar(); if (tab === 'budget') renderBudgetAnalysis(); }
 
 function getStatPeriodRange(period) {
   const now = new Date();
@@ -1149,6 +1195,55 @@ function getStatPeriodsThisYear(dim) {
   }
   return ps;
 }
+function changeCalMonth(delta) { calViewMonth += delta; if (calViewMonth > 11) { calViewMonth = 0; calViewYear++; } else if (calViewMonth < 0) { calViewMonth = 11; calViewYear--; } renderCalendar(); }
+function renderCalendar() {
+  const y = calViewYear, m = calViewMonth;
+  const now = new Date();
+  const todayStr = `${now.getFullYear()}-${String(now.getMonth()+1).padStart(2,'0')}-${String(now.getDate()).padStart(2,'0')}`;
+  document.getElementById('calMonthLabel').textContent = `${y}年${m+1}月`;
+  const firstDay = new Date(y, m, 1).getDay();
+  const daysInMonth = new Date(y, m+1, 0).getDate();
+  const startOffset = firstDay === 0 ? 6 : firstDay - 1; // Monday start
+  // Precompute daily data
+  const dailyData = {};
+  let totalInc = 0, totalSpd = 0, totalInv = 0;
+  for (let d = 1; d <= daysInMonth; d++) {
+    const ds = `${y}-${String(m+1).padStart(2,'0')}-${String(d).padStart(2,'0')}`;
+    const txs = state.transactions.filter(t => t.date === ds);
+    const inc = txs.filter(t => t.type === 'income').reduce((s,t) => s + t.amount, 0);
+    const spd = txs.filter(t => t.type === 'expense' && getEnvelopeInfo(t.envelope).type === 'spending').reduce((s,t) => s + t.amount, 0);
+    const inv = txs.filter(t => t.type === 'expense' && getEnvelopeInfo(t.envelope).type === 'investing').reduce((s,t) => s + t.amount, 0);
+    const net = inc - spd - inv;
+    dailyData[ds] = { inc, spd, inv, net, hasData: txs.length > 0 };
+    totalInc += inc; totalSpd += spd; totalInv += inv;
+  }
+  const totalSur = totalInc - totalSpd - totalInv;
+  document.getElementById('calIncome').textContent = formatMoney(totalInc);
+  document.getElementById('calSpending').textContent = formatMoney(totalSpd);
+  document.getElementById('calInvest').textContent = formatMoney(totalInv);
+  const se = document.getElementById('calSurplus'); se.textContent = (totalSur >= 0 ? '+' : '-') + formatMoney(Math.abs(totalSur)); se.className = 'value ' + (totalSur >= 0 ? 'net-positive' : 'net-negative');
+  // Build grid
+  const headers = ['一','二','三','四','五','六','日'];
+  let html = headers.map(h => `<div class="cal-header">${h}</div>`).join('');
+  // Empty cells before first day
+  for (let i = 0; i < startOffset; i++) html += '<div class="cal-cell empty"></div>';
+  for (let d = 1; d <= daysInMonth; d++) {
+    const ds = `${y}-${String(m+1).padStart(2,'0')}-${String(d).padStart(2,'0')}`;
+    const data = dailyData[ds];
+    let cls = 'cal-cell';
+    if (ds === todayStr) cls += ' today';
+    if (data.hasData) cls += data.net >= 0 ? ' positive' : ' negative';
+    let amountStr = '';
+    if (data.hasData) {
+      if (data.inc > 0 && data.spd === 0 && data.inv === 0) amountStr = `+${data.inc >= 1000 ? (data.inc/1000).toFixed(1)+'k' : data.inc.toFixed(0)}`;
+      else if (data.inc === 0 && (data.spd > 0 || data.inv > 0)) amountStr = `-${(data.spd+data.inv) >= 1000 ? ((data.spd+data.inv)/1000).toFixed(1)+'k' : (data.spd+data.inv).toFixed(0)}`;
+      else amountStr = `${data.net >= 0 ? '+' : ''}${Math.abs(data.net) >= 1000 ? (data.net/1000).toFixed(1)+'k' : data.net.toFixed(0)}`;
+    }
+    html += `<div class="${cls}" onclick="selectCalDay('${ds}')"><div class="cal-date">${d}</div><div class="cal-amount">${amountStr}</div></div>`;
+  }
+  document.getElementById('calendarGrid').innerHTML = html;
+}
+function selectCalDay(ds) { document.querySelectorAll('.cal-cell').forEach(c => c.classList.remove('selected')); event.currentTarget.classList.add('selected'); const txs = state.transactions.filter(t => t.date === ds); renderTxList('allTx', [...txs].sort((a,b) => (b.createdAt||0) - (a.createdAt||0))); }
 let statCompareChart = null;
 function renderStats() {
   const cr = getStatPeriodRange(currentStatPeriod);
@@ -1178,6 +1273,7 @@ function renderStats() {
     ] }, options: { responsive: true, plugins: { legend: { labels: { usePointStyle: true, font: { size: 11 }, color: tc.getPropertyValue('--text-secondary').trim() } } }, scales: { x: { ticks: { font: { size: 11 }, color: tc.getPropertyValue('--text-tertiary').trim() }, grid: { display: false } }, y: { ticks: { font: { size: 10 }, color: tc.getPropertyValue('--text-tertiary').trim(), callback: v => v >= 1000 ? (v/1000)+'k' : v }, grid: { color: tc.getPropertyValue('--border').trim() } } } } });
   }
   renderExpenseChart(f); renderTrendChart(f);
+  if (currentStatSubTab === 'calendar') renderCalendar();
   if (currentStatSubTab === 'budget') renderBudgetAnalysis();
   renderTxList('allTx', [...f].sort((a,b) => b.date !== a.date ? b.date.localeCompare(a.date) : (b.createdAt||0) - (a.createdAt||0)));
 }
