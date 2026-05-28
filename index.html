@@ -1155,7 +1155,7 @@ function setStatPeriod(p, btn) {
   // Update calendar sub-tab label based on period
   const calBtn = document.getElementById('calSubTabBtn');
   if (calBtn) {
-    const labels = { day: '日历', week: '周历', month: '日历', year: '年历' };
+    const labels = { day: '日历', week: '周历', month: '月历', year: '年历' };
     calBtn.textContent = labels[p] || '日历';
   }
   if (currentPage === 'stats') renderStats(); if (currentPage === 'wealth') renderWealth();
@@ -1231,19 +1231,10 @@ function getStatPeriodsThisYear(dim) {
   return ps;
 }
 function changeCalMonth(delta) {
-  if (currentStatPeriod === 'day') {
-    if (typeof calViewWeekStart === 'undefined' || calViewWeekStart === null) {
-      const now = new Date(); const dow = now.getDay() || 7;
-      const mon = new Date(now); mon.setDate(now.getDate() - dow + 1);
-      const fmt = (d) => `${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,'0')}-${String(d.getDate()).padStart(2,'0')}`;
-      calViewWeekStart = fmt(mon);
-    }
-    const cur = new Date(calViewWeekStart + 'T00:00:00');
-    cur.setDate(cur.getDate() + delta * 7);
-    const fmt = (d) => `${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,'0')}-${String(d.getDate()).padStart(2,'0')}`;
-    calViewWeekStart = fmt(cur);
-  } else if (currentStatPeriod === 'year') {
-    calViewYear += delta;
+  if (currentStatPeriod === 'year') {
+    calViewYear += delta * 5; // skip 5 years at a time in year view
+  } else if (currentStatPeriod === 'month') {
+    calViewYear += delta; // skip 1 year at a time in month view
   } else {
     calViewMonth += delta;
     if (calViewMonth > 11) { calViewMonth = 0; calViewYear++; }
@@ -1260,121 +1251,7 @@ function renderCalendar() {
   const y = calViewYear, m = calViewMonth;
 
   if (currentStatPeriod === 'day') {
-    // Day view: show current week as 7-day strip
-    const dow = now.getDay() || 7;
-    const mon = new Date(y, m, now.getDate() - dow + 1);
-    // If navigating, use calViewYear/calViewMonth to determine the week
-    // We store calViewWeekStart as the Monday of the displayed week
-    if (typeof calViewWeekStart === 'undefined' || calViewWeekStart === null) {
-      calViewWeekStart = fmt(mon);
-    }
-    const weekMon = new Date(calViewWeekStart + 'T00:00:00');
-    const weekSun = new Date(weekMon); weekSun.setDate(weekMon.getDate() + 6);
-    label.textContent = `${weekMon.getMonth()+1}月${weekMon.getDate()}日 - ${weekSun.getMonth()+1}月${weekSun.getDate()}日`;
-    const headers = ['一','二','三','四','五','六','日'];
-    let html = headers.map(h => `<div class="cal-header">${h}</div>`).join('');
-    let totalInc=0, totalSpd=0, totalInv=0;
-    for (let i = 0; i < 7; i++) {
-      const d = new Date(weekMon); d.setDate(weekMon.getDate() + i);
-      const ds = fmt(d);
-      const txs = state.transactions.filter(t => t.date === ds);
-      const inc = txs.filter(t => t.type === 'income').reduce((s,t) => s + t.amount, 0);
-      const spd = txs.filter(t => t.type === 'expense' && getEnvelopeInfo(t.envelope).type === 'spending').reduce((s,t) => s + t.amount, 0);
-      const inv = txs.filter(t => t.type === 'expense' && getEnvelopeInfo(t.envelope).type === 'investing').reduce((s,t) => s + t.amount, 0);
-      const net = inc - spd - inv;
-      totalInc += inc; totalSpd += spd; totalInv += inv;
-      let cls = 'cal-day-cell';
-      if (ds === todayStr) cls += ' today';
-      if (txs.length > 0) cls += net >= 0 ? ' positive' : ' negative';
-      let amt = '';
-      if (txs.length > 0) {
-        if (inc > 0 && spd === 0 && inv === 0) amt = `+${inc>=1000?(inc/1000).toFixed(1)+'k':inc.toFixed(0)}`;
-        else if (inc === 0 && (spd > 0 || inv > 0)) amt = `-${(spd+inv)>=1000?((spd+inv)/1000).toFixed(1)+'k':(spd+inv).toFixed(0)}`;
-        else amt = `${net>=0?'+':''}${Math.abs(net)>=1000?(net/1000).toFixed(1)+'k':net.toFixed(0)}`;
-      }
-      html += `<div class="${cls}" onclick="selectCalDay('${ds}')"><div class="cal-date">${d.getDate()}</div><div class="cal-amount">${amt}</div></div>`;
-    }
-    const totalSur = totalInc - totalSpd - totalInv;
-    document.getElementById('calIncome').textContent = formatMoney(totalInc);
-    document.getElementById('calSpending').textContent = formatMoney(totalSpd);
-    document.getElementById('calInvest').textContent = formatMoney(totalInv);
-    const se = document.getElementById('calSurplus'); se.textContent = (totalSur>=0?'+':'-')+formatMoney(Math.abs(totalSur)); se.className = 'value '+(totalSur>=0?'net-positive':'net-negative');
-    grid.className = 'calendar-grid grid-days';
-    grid.innerHTML = html;
-  } else if (currentStatPeriod === 'week') {
-    // Week view: show weeks of the current month as blocks
-    label.textContent = `${y}年${m+1}月`;
-    const firstDay = new Date(y, m, 1).getDay();
-    const daysInMonth = new Date(y, m+1, 0).getDate();
-    let weeks = [];
-    let weekStart = 1;
-    let weekNum = 1;
-    while (weekStart <= daysInMonth) {
-      const weekEnd = Math.min(weekStart + 6, daysInMonth);
-      const startDs = `${y}-${String(m+1).padStart(2,'0')}-${String(weekStart).padStart(2,'0')}`;
-      const endDs = `${y}-${String(m+1).padStart(2,'0')}-${String(weekEnd).padStart(2,'0')}`;
-      weeks.push({ num: weekNum, start: weekStart, end: weekEnd, startDs, endDs });
-      weekStart = weekEnd + 1;
-      weekNum++;
-    }
-    let html = '';
-    let totalInc=0, totalSpd=0, totalInv=0;
-    weeks.forEach(wk => {
-      const txs = state.transactions.filter(t => t.date >= wk.startDs && t.date <= wk.endDs);
-      const inc = txs.filter(t => t.type === 'income').reduce((s,t) => s + t.amount, 0);
-      const spd = txs.filter(t => t.type === 'expense' && getEnvelopeInfo(t.envelope).type === 'spending').reduce((s,t) => s + t.amount, 0);
-      const inv = txs.filter(t => t.type === 'expense' && getEnvelopeInfo(t.envelope).type === 'investing').reduce((s,t) => s + t.amount, 0);
-      const net = inc - spd - inv;
-      totalInc += inc; totalSpd += spd; totalInv += inv;
-      let cls = 'cal-block';
-      if (txs.length > 0) cls += net >= 0 ? ' positive' : ' negative';
-      let amtLine = '';
-      if (txs.length > 0) {
-        amtLine = `<span style="color:${net>=0?'#00b894':'#e17055'}">${net>=0?'+':''}${Math.abs(net)>=1000?(net/1000).toFixed(1)+'k':net.toFixed(0)}</span>`;
-      }
-      html += `<div class="${cls}" onclick="selectCalWeek('${wk.startDs}','${wk.endDs}')"><div class="block-title">WK${wk.num}</div><div style="font-size:10px;color:var(--text-tertiary);margin-bottom:2px">${wk.start}-${wk.end}日</div><div class="block-amount">${amtLine}</div></div>`;
-    });
-    const totalSur = totalInc - totalSpd - totalInv;
-    document.getElementById('calIncome').textContent = formatMoney(totalInc);
-    document.getElementById('calSpending').textContent = formatMoney(totalSpd);
-    document.getElementById('calInvest').textContent = formatMoney(totalInv);
-    const se = document.getElementById('calSurplus'); se.textContent = (totalSur>=0?'+':'-')+formatMoney(Math.abs(totalSur)); se.className = 'value '+(totalSur>=0?'net-positive':'net-negative');
-    grid.className = 'calendar-grid grid-weeks';
-    grid.innerHTML = html;
-  } else if (currentStatPeriod === 'year') {
-    // Year view: show 12 months as blocks
-    label.textContent = `${y}年`;
-    const monthNames = ['1月','2月','3月','4月','5月','6月','7月','8月','9月','10月','11月','12月'];
-    let html = '';
-    let totalInc=0, totalSpd=0, totalInv=0;
-    for (let mi = 0; mi < 12; mi++) {
-      const startDs = `${y}-${String(mi+1).padStart(2,'0')}-01`;
-      const lastDay = new Date(y, mi+1, 0).getDate();
-      const endDs = `${y}-${String(mi+1).padStart(2,'0')}-${String(lastDay).padStart(2,'0')}`;
-      const txs = state.transactions.filter(t => t.date >= startDs && t.date <= endDs);
-      const inc = txs.filter(t => t.type === 'income').reduce((s,t) => s + t.amount, 0);
-      const spd = txs.filter(t => t.type === 'expense' && getEnvelopeInfo(t.envelope).type === 'spending').reduce((s,t) => s + t.amount, 0);
-      const inv = txs.filter(t => t.type === 'expense' && getEnvelopeInfo(t.envelope).type === 'investing').reduce((s,t) => s + t.amount, 0);
-      const net = inc - spd - inv;
-      totalInc += inc; totalSpd += spd; totalInv += inv;
-      let cls = 'cal-block';
-      if (mi === now.getMonth() && y === now.getFullYear()) cls += ' today';
-      if (txs.length > 0) cls += net >= 0 ? ' positive' : ' negative';
-      let amtLine = '';
-      if (txs.length > 0) {
-        amtLine = `<span style="color:${net>=0?'#00b894':'#e17055'}">${net>=0?'+':''}${Math.abs(net)>=1000?(net/1000).toFixed(1)+'k':net.toFixed(0)}</span>`;
-      }
-      html += `<div class="${cls}" onclick="selectCalMonth('${startDs}','${endDs}')"><div class="block-title">${monthNames[mi]}</div><div class="block-amount">${amtLine}</div></div>`;
-    }
-    const totalSur = totalInc - totalSpd - totalInv;
-    document.getElementById('calIncome').textContent = formatMoney(totalInc);
-    document.getElementById('calSpending').textContent = formatMoney(totalSpd);
-    document.getElementById('calInvest').textContent = formatMoney(totalInv);
-    const se = document.getElementById('calSurplus'); se.textContent = (totalSur>=0?'+':'-')+formatMoney(Math.abs(totalSur)); se.className = 'value '+(totalSur>=0?'net-positive':'net-negative');
-    grid.className = 'calendar-grid grid-year';
-    grid.innerHTML = html;
-  } else {
-    // Month view: original day grid
+    // 日历: month day-grid
     label.textContent = `${y}年${m+1}月`;
     const firstDay = new Date(y, m, 1).getDay();
     const daysInMonth = new Date(y, m+1, 0).getDate();
@@ -1415,11 +1292,120 @@ function renderCalendar() {
     }
     grid.className = 'calendar-grid';
     grid.innerHTML = html;
+  } else if (currentStatPeriod === 'week') {
+    // 周历: WK1~WK5 blocks for the month
+    label.textContent = `${y}年${m+1}月`;
+    const daysInMonth = new Date(y, m+1, 0).getDate();
+    const firstDow = new Date(y, m, 1).getDay() || 7;
+    let weeks = [];
+    let dayPtr = 1, wkNum = 1;
+    while (dayPtr <= daysInMonth) {
+      const weekEnd = Math.min(dayPtr + 7 - ((dayPtr === 1 ? firstDow : new Date(y, m, dayPtr).getDay() || 7) - 1 + 7) % 7 - 1 + 1, daysInMonth);
+      // Simplified: just chunk by 7 days from month start
+      const start = dayPtr;
+      const end = Math.min(dayPtr + 6, daysInMonth);
+      const startDs = `${y}-${String(m+1).padStart(2,'0')}-${String(start).padStart(2,'0')}`;
+      const endDs = `${y}-${String(m+1).padStart(2,'0')}-${String(end).padStart(2,'0')}`;
+      weeks.push({ num: wkNum, start, end, startDs, endDs });
+      dayPtr = end + 1;
+      wkNum++;
+    }
+    let html = '';
+    let totalInc=0, totalSpd=0, totalInv=0;
+    weeks.forEach(wk => {
+      const txs = state.transactions.filter(t => t.date >= wk.startDs && t.date <= wk.endDs);
+      const inc = txs.filter(t => t.type === 'income').reduce((s,t) => s + t.amount, 0);
+      const spd = txs.filter(t => t.type === 'expense' && getEnvelopeInfo(t.envelope).type === 'spending').reduce((s,t) => s + t.amount, 0);
+      const inv = txs.filter(t => t.type === 'expense' && getEnvelopeInfo(t.envelope).type === 'investing').reduce((s,t) => s + t.amount, 0);
+      const net = inc - spd - inv;
+      totalInc += inc; totalSpd += spd; totalInv += inv;
+      let cls = 'cal-block';
+      if (txs.length > 0) cls += net >= 0 ? ' positive' : ' negative';
+      let amtLine = '';
+      if (txs.length > 0) {
+        amtLine = `<span style="color:${net>=0?'#00b894':'#e17055'}">${net>=0?'+':''}${Math.abs(net)>=1000?(net/1000).toFixed(1)+'k':net.toFixed(0)}</span>`;
+      }
+      html += `<div class="${cls}" onclick="selectCalWeek('${wk.startDs}','${wk.endDs}')"><div class="block-title">WK${wk.num}</div><div style="font-size:10px;color:var(--text-tertiary);margin-bottom:2px">${wk.start}-${wk.end}日</div><div class="block-amount">${amtLine}</div></div>`;
+    });
+    const totalSur = totalInc - totalSpd - totalInv;
+    document.getElementById('calIncome').textContent = formatMoney(totalInc);
+    document.getElementById('calSpending').textContent = formatMoney(totalSpd);
+    document.getElementById('calInvest').textContent = formatMoney(totalInv);
+    const se = document.getElementById('calSurplus'); se.textContent = (totalSur>=0?'+':'-')+formatMoney(Math.abs(totalSur)); se.className = 'value '+(totalSur>=0?'net-positive':'net-negative');
+    grid.className = 'calendar-grid grid-weeks';
+    grid.innerHTML = html;
+  } else if (currentStatPeriod === 'month') {
+    // 月历: 12 month blocks for the year
+    label.textContent = `${y}年`;
+    const monthNames = ['1月','2月','3月','4月','5月','6月','7月','8月','9月','10月','11月','12月'];
+    let html = '';
+    let totalInc=0, totalSpd=0, totalInv=0;
+    for (let mi = 0; mi < 12; mi++) {
+      const startDs = `${y}-${String(mi+1).padStart(2,'0')}-01`;
+      const lastDay = new Date(y, mi+1, 0).getDate();
+      const endDs = `${y}-${String(mi+1).padStart(2,'0')}-${String(lastDay).padStart(2,'0')}`;
+      const txs = state.transactions.filter(t => t.date >= startDs && t.date <= endDs);
+      const inc = txs.filter(t => t.type === 'income').reduce((s,t) => s + t.amount, 0);
+      const spd = txs.filter(t => t.type === 'expense' && getEnvelopeInfo(t.envelope).type === 'spending').reduce((s,t) => s + t.amount, 0);
+      const inv = txs.filter(t => t.type === 'expense' && getEnvelopeInfo(t.envelope).type === 'investing').reduce((s,t) => s + t.amount, 0);
+      const net = inc - spd - inv;
+      totalInc += inc; totalSpd += spd; totalInv += inv;
+      let cls = 'cal-block';
+      if (mi === now.getMonth() && y === now.getFullYear()) cls += ' today';
+      if (txs.length > 0) cls += net >= 0 ? ' positive' : ' negative';
+      let amtLine = '';
+      if (txs.length > 0) {
+        amtLine = `<span style="color:${net>=0?'#00b894':'#e17055'}">${net>=0?'+':''}${Math.abs(net)>=1000?(net/1000).toFixed(1)+'k':net.toFixed(0)}</span>`;
+      }
+      html += `<div class="${cls}" onclick="selectCalMonthBlock('${startDs}','${endDs}')"><div class="block-title">${monthNames[mi]}</div><div class="block-amount">${amtLine}</div></div>`;
+    }
+    const totalSur = totalInc - totalSpd - totalInv;
+    document.getElementById('calIncome').textContent = formatMoney(totalInc);
+    document.getElementById('calSpending').textContent = formatMoney(totalSpd);
+    document.getElementById('calInvest').textContent = formatMoney(totalInv);
+    const se = document.getElementById('calSurplus'); se.textContent = (totalSur>=0?'+':'-')+formatMoney(Math.abs(totalSur)); se.className = 'value '+(totalSur>=0?'net-positive':'net-negative');
+    grid.className = 'calendar-grid grid-year';
+    grid.innerHTML = html;
+  } else {
+    // 年历: multiple year blocks
+    const centerYear = y;
+    const startYear = centerYear - 2;
+    const endYear = centerYear + 2;
+    label.textContent = `${startYear}-${endYear}`;
+    let html = '';
+    let totalInc=0, totalSpd=0, totalInv=0;
+    for (let yi = startYear; yi <= endYear; yi++) {
+      const startDs = `${yi}-01-01`;
+      const endDs = `${yi}-12-31`;
+      const txs = state.transactions.filter(t => t.date >= startDs && t.date <= endDs);
+      const inc = txs.filter(t => t.type === 'income').reduce((s,t) => s + t.amount, 0);
+      const spd = txs.filter(t => t.type === 'expense' && getEnvelopeInfo(t.envelope).type === 'spending').reduce((s,t) => s + t.amount, 0);
+      const inv = txs.filter(t => t.type === 'expense' && getEnvelopeInfo(t.envelope).type === 'investing').reduce((s,t) => s + t.amount, 0);
+      const net = inc - spd - inv;
+      totalInc += inc; totalSpd += spd; totalInv += inv;
+      let cls = 'cal-block';
+      if (yi === now.getFullYear()) cls += ' today';
+      if (txs.length > 0) cls += net >= 0 ? ' positive' : ' negative';
+      let amtLine = '';
+      if (txs.length > 0) {
+        amtLine = `<span style="color:${net>=0?'#00b894':'#e17055'}">${net>=0?'+':''}${Math.abs(net)>=1000?(net/1000).toFixed(1)+'k':net.toFixed(0)}</span>`;
+      }
+      html += `<div class="${cls}" onclick="selectCalYear('${yi}')"><div class="block-title">${yi}</div><div class="block-amount">${amtLine}</div></div>`;
+    }
+    const totalSur = totalInc - totalSpd - totalInv;
+    document.getElementById('calIncome').textContent = formatMoney(totalInc);
+    document.getElementById('calSpending').textContent = formatMoney(totalSpd);
+    document.getElementById('calInvest').textContent = formatMoney(totalInv);
+    const se = document.getElementById('calSurplus'); se.textContent = (totalSur>=0?'+':'-')+formatMoney(Math.abs(totalSur)); se.className = 'value '+(totalSur>=0?'net-positive':'net-negative');
+    grid.className = 'calendar-grid grid-year';
+    grid.innerHTML = html;
   }
 }
 function selectCalDay(ds) { document.querySelectorAll('.cal-cell,.cal-day-cell').forEach(c => c.classList.remove('selected')); event.currentTarget.classList.add('selected'); const txs = state.transactions.filter(t => t.date === ds); renderTxList('allTx', [...txs].sort((a,b) => (b.createdAt||0) - (a.createdAt||0))); }
 function selectCalWeek(startDs, endDs) { document.querySelectorAll('.cal-block').forEach(c => c.classList.remove('selected')); event.currentTarget.classList.add('selected'); const txs = state.transactions.filter(t => t.date >= startDs && t.date <= endDs); renderTxList('allTx', [...txs].sort((a,b) => b.date !== a.date ? b.date.localeCompare(a.date) : (b.createdAt||0) - (a.createdAt||0))); }
-function selectCalMonth(startDs, endDs) { document.querySelectorAll('.cal-block').forEach(c => c.classList.remove('selected')); event.currentTarget.classList.add('selected'); const txs = state.transactions.filter(t => t.date >= startDs && t.date <= endDs); renderTxList('allTx', [...txs].sort((a,b) => b.date !== a.date ? b.date.localeCompare(a.date) : (b.createdAt||0) - (a.createdAt||0))); }
+function selectCalMonthBlock(startDs, endDs) { document.querySelectorAll('.cal-block').forEach(c => c.classList.remove('selected')); event.currentTarget.classList.add('selected'); const txs = state.transactions.filter(t => t.date >= startDs && t.date <= endDs); renderTxList('allTx', [...txs].sort((a,b) => b.date !== a.date ? b.date.localeCompare(a.date) : (b.createdAt||0) - (a.createdAt||0))); }
+function selectCalYear(year) { document.querySelectorAll('.cal-block').forEach(c => c.classList.remove('selected')); event.currentTarget.classList.add('selected'); const txs = state.transactions.filter(t => t.date >= year+'-01-01' && t.date <= year+'-12-31'); renderTxList('allTx', [...txs].sort((a,b) => b.date !== a.date ? b.date.localeCompare(a.date) : (b.createdAt||0) - (a.createdAt||0))); }
+
 let statCompareChart = null;
 function renderStats() {
   const cr = getStatPeriodRange(currentStatPeriod);
