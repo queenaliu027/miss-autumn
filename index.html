@@ -588,7 +588,7 @@ body { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', 'PingFang SC'
         <button class="period-tab" onclick="setStatPeriod('year',this)">年</button>
       </div>
       <div class="stat-sub-tabs">
-        <button class="stat-sub-tab active" onclick="setStatSubTab('calendar',this)">日历</button>
+        <button class="stat-sub-tab active" id="calSubTabBtn" onclick="setStatSubTab('calendar',this)">日历</button>
         <button class="stat-sub-tab" onclick="setStatSubTab('charts',this)">图表分析</button>
         <button class="stat-sub-tab" onclick="setStatSubTab('budget',this)">预算分析</button>
       </div>
@@ -1149,7 +1149,17 @@ function submitRecord() {
 function toggleVoice() { if (isRecording) { if (recognition) { recognition.stop(); recognition = null; } isRecording = false; document.getElementById('micBtn').classList.remove('recording'); document.getElementById('micBtn').textContent = '🎙️'; document.getElementById('voiceIndicator').classList.remove('show'); return; } const SR = window.SpeechRecognition || window.webkitSpeechRecognition; if (!SR) { showToast('浏览器不支持语音识别'); return; } recognition = new SR(); recognition.lang = 'zh-CN'; recognition.continuous = false; recognition.interimResults = true; recognition.onstart = () => { isRecording = true; document.getElementById('micBtn').classList.add('recording'); document.getElementById('micBtn').textContent = '⏹️'; document.getElementById('voiceIndicator').classList.add('show'); }; recognition.onresult = (e) => { let t = ''; for (let i = e.resultIndex; i < e.results.length; i++) t += e.results[i][0].transcript; document.getElementById('recordInput').value = t; handleInputChange(); }; recognition.onend = () => { isRecording = false; document.getElementById('micBtn').classList.remove('recording'); document.getElementById('micBtn').textContent = '🎙️'; document.getElementById('voiceIndicator').classList.remove('show'); }; recognition.onerror = (e) => { isRecording = false; document.getElementById('micBtn').classList.remove('recording'); document.getElementById('micBtn').textContent = '🎙️'; document.getElementById('voiceIndicator').classList.remove('show'); showToast('语音识别出错'); }; recognition.start(); }
 
 // ==================== Stats ====================
-function setStatPeriod(p, btn) { currentStatPeriod = p; calViewWeekStart = null; document.querySelectorAll('.period-tab').forEach(t => t.classList.remove('active')); btn.classList.add('active'); if (currentPage === 'stats') renderStats(); if (currentPage === 'wealth') renderWealth(); }
+function setStatPeriod(p, btn) {
+  currentStatPeriod = p; calViewWeekStart = null;
+  document.querySelectorAll('.period-tab').forEach(t => t.classList.remove('active')); btn.classList.add('active');
+  // Update calendar sub-tab label based on period
+  const calBtn = document.getElementById('calSubTabBtn');
+  if (calBtn) {
+    const labels = { day: '日历', week: '周历', month: '日历', year: '年历' };
+    calBtn.textContent = labels[p] || '日历';
+  }
+  if (currentPage === 'stats') renderStats(); if (currentPage === 'wealth') renderWealth();
+}
 function setStatSubTab(tab, btn) { currentStatSubTab = tab; document.querySelectorAll('.stat-sub-tab').forEach(t => t.classList.remove('active')); btn.classList.add('active'); document.getElementById('statCalendarSection').style.display = tab === 'calendar' ? 'block' : 'none'; document.getElementById('statChartsSection').style.display = tab === 'charts' ? 'block' : 'none'; document.getElementById('statBudgetSection').style.display = tab === 'budget' ? 'block' : 'none'; if (tab === 'calendar') renderCalendar(); if (tab === 'budget') renderBudgetAnalysis(); }
 
 function getStatPeriodRange(period) {
