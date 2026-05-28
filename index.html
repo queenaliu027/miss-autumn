@@ -384,8 +384,8 @@ body { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', 'PingFang SC'
 .cal-cell.positive .cal-amount { color: #00b894; }
 .cal-cell.negative { background: rgba(225,112,85,0.1); }
 .cal-cell.negative .cal-amount { color: #e17055; }
-.cal-cell.today { border: 2px solid var(--primary); }
-.cal-cell.today .cal-date { color: var(--primary); font-weight: 700; }
+.cal-cell.today, .cal-block.today { border: 2px solid var(--primary); }
+.cal-cell.today .cal-date, .cal-block.today .block-title { color: var(--primary); font-weight: 700; }
 .cal-cell.selected { background: var(--primary); }
 .cal-cell.selected .cal-date, .cal-cell.selected .cal-amount { color: #fff !important; }
 .cal-legend { display: flex; gap: 16px; justify-content: center; margin-bottom: 16px; font-size: 11px; color: var(--text-tertiary); }
@@ -394,6 +394,31 @@ body { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', 'PingFang SC'
 .cal-dot.positive { background: rgba(0,184,148,0.3); }
 .cal-dot.negative { background: rgba(225,112,85,0.3); }
 .cal-dot.today { background: var(--primary); }
+
+.calendar-grid.grid-weeks { grid-template-columns: repeat(3, 1fr); gap: 8px; }
+.calendar-grid.grid-year { grid-template-columns: repeat(3, 1fr); gap: 8px; }
+.calendar-grid.grid-days { grid-template-columns: repeat(7, 1fr); gap: 3px; }
+.cal-block { text-align: center; padding: 12px 6px; border-radius: 10px; min-height: 72px; display: flex; flex-direction: column; align-items: center; justify-content: center; cursor: pointer; transition: all 0.15s; background: var(--bg-input); }
+.cal-block:hover { filter: brightness(0.96); }
+.cal-block .block-title { font-size: 13px; font-weight: 600; color: var(--text-primary); margin-bottom: 4px; }
+.cal-block .block-amount { font-size: 11px; line-height: 1.3; font-weight: 500; }
+.cal-block.positive { background: rgba(0,184,148,0.1); }
+.cal-block.negative { background: rgba(225,112,85,0.1); }
+.cal-block.selected { background: var(--primary); }
+.cal-block.selected .block-title, .cal-block.selected .block-amount { color: #fff !important; }
+.cal-day-cell { text-align: center; padding: 6px 2px; border-radius: 8px; min-height: 52px; display: flex; flex-direction: column; align-items: center; justify-content: center; cursor: pointer; transition: all 0.15s; }
+.cal-day-cell:hover { background: var(--bg-input); }
+.cal-day-cell .cal-date { font-size: 12px; color: var(--text-secondary); margin-bottom: 2px; line-height: 1; }
+.cal-day-cell .cal-amount { font-size: 10px; line-height: 1.2; font-weight: 500; }
+.cal-day-cell.positive { background: rgba(0,184,148,0.1); }
+.cal-day-cell.positive .cal-amount { color: #00b894; }
+.cal-day-cell.negative { background: rgba(225,112,85,0.1); }
+.cal-day-cell.negative .cal-amount { color: #e17055; }
+.cal-day-cell.today { border: 2px solid var(--primary); }
+.cal-day-cell.today .cal-date { color: var(--primary); font-weight: 700; }
+.cal-day-cell.selected { background: var(--primary); }
+.cal-day-cell.selected .cal-date, .cal-day-cell.selected .cal-amount { color: #fff !important; }
+
 .stat-sub-tabs { display: flex; gap: 0; margin-bottom: 16px; background: var(--bg-input); border-radius: var(--radius-sm); padding: 3px; }
 .stat-sub-tab { flex: 1; padding: 8px 4px; border: none; background: none; border-radius: 8px; font-size: 13px; font-weight: 500; cursor: pointer; color: var(--text-secondary); font-family: inherit; text-align: center; }
 .stat-sub-tab.active { background: var(--primary); color: #fff; }
@@ -905,7 +930,7 @@ function parseInput(text) {
 }
 
 // ==================== UI ====================
-let currentPage = 'overview', currentStatPeriod = 'month', currentStatSubTab = 'calendar', calViewYear = new Date().getFullYear(), calViewMonth = new Date().getMonth();
+let currentPage = 'overview', currentStatPeriod = 'month', currentStatSubTab = 'calendar', calViewYear = new Date().getFullYear(), calViewMonth = new Date().getMonth(), calViewWeekStart = null;
 let isRecording = false, recognition = null;
 let expenseChart = null, trendChart = null, netAssetTrendChart = null, wealthGrowthChart = null, spendingInvestChart = null;
 
@@ -1124,7 +1149,7 @@ function submitRecord() {
 function toggleVoice() { if (isRecording) { if (recognition) { recognition.stop(); recognition = null; } isRecording = false; document.getElementById('micBtn').classList.remove('recording'); document.getElementById('micBtn').textContent = '🎙️'; document.getElementById('voiceIndicator').classList.remove('show'); return; } const SR = window.SpeechRecognition || window.webkitSpeechRecognition; if (!SR) { showToast('浏览器不支持语音识别'); return; } recognition = new SR(); recognition.lang = 'zh-CN'; recognition.continuous = false; recognition.interimResults = true; recognition.onstart = () => { isRecording = true; document.getElementById('micBtn').classList.add('recording'); document.getElementById('micBtn').textContent = '⏹️'; document.getElementById('voiceIndicator').classList.add('show'); }; recognition.onresult = (e) => { let t = ''; for (let i = e.resultIndex; i < e.results.length; i++) t += e.results[i][0].transcript; document.getElementById('recordInput').value = t; handleInputChange(); }; recognition.onend = () => { isRecording = false; document.getElementById('micBtn').classList.remove('recording'); document.getElementById('micBtn').textContent = '🎙️'; document.getElementById('voiceIndicator').classList.remove('show'); }; recognition.onerror = (e) => { isRecording = false; document.getElementById('micBtn').classList.remove('recording'); document.getElementById('micBtn').textContent = '🎙️'; document.getElementById('voiceIndicator').classList.remove('show'); showToast('语音识别出错'); }; recognition.start(); }
 
 // ==================== Stats ====================
-function setStatPeriod(p, btn) { currentStatPeriod = p; document.querySelectorAll('.period-tab').forEach(t => t.classList.remove('active')); btn.classList.add('active'); if (currentPage === 'stats') renderStats(); if (currentPage === 'wealth') renderWealth(); }
+function setStatPeriod(p, btn) { currentStatPeriod = p; calViewWeekStart = null; document.querySelectorAll('.period-tab').forEach(t => t.classList.remove('active')); btn.classList.add('active'); if (currentPage === 'stats') renderStats(); if (currentPage === 'wealth') renderWealth(); }
 function setStatSubTab(tab, btn) { currentStatSubTab = tab; document.querySelectorAll('.stat-sub-tab').forEach(t => t.classList.remove('active')); btn.classList.add('active'); document.getElementById('statCalendarSection').style.display = tab === 'calendar' ? 'block' : 'none'; document.getElementById('statChartsSection').style.display = tab === 'charts' ? 'block' : 'none'; document.getElementById('statBudgetSection').style.display = tab === 'budget' ? 'block' : 'none'; if (tab === 'calendar') renderCalendar(); if (tab === 'budget') renderBudgetAnalysis(); }
 
 function getStatPeriodRange(period) {
@@ -1195,55 +1220,196 @@ function getStatPeriodsThisYear(dim) {
   }
   return ps;
 }
-function changeCalMonth(delta) { calViewMonth += delta; if (calViewMonth > 11) { calViewMonth = 0; calViewYear++; } else if (calViewMonth < 0) { calViewMonth = 11; calViewYear--; } renderCalendar(); }
-function renderCalendar() {
-  const y = calViewYear, m = calViewMonth;
-  const now = new Date();
-  const todayStr = `${now.getFullYear()}-${String(now.getMonth()+1).padStart(2,'0')}-${String(now.getDate()).padStart(2,'0')}`;
-  document.getElementById('calMonthLabel').textContent = `${y}年${m+1}月`;
-  const firstDay = new Date(y, m, 1).getDay();
-  const daysInMonth = new Date(y, m+1, 0).getDate();
-  const startOffset = firstDay === 0 ? 6 : firstDay - 1; // Monday start
-  // Precompute daily data
-  const dailyData = {};
-  let totalInc = 0, totalSpd = 0, totalInv = 0;
-  for (let d = 1; d <= daysInMonth; d++) {
-    const ds = `${y}-${String(m+1).padStart(2,'0')}-${String(d).padStart(2,'0')}`;
-    const txs = state.transactions.filter(t => t.date === ds);
-    const inc = txs.filter(t => t.type === 'income').reduce((s,t) => s + t.amount, 0);
-    const spd = txs.filter(t => t.type === 'expense' && getEnvelopeInfo(t.envelope).type === 'spending').reduce((s,t) => s + t.amount, 0);
-    const inv = txs.filter(t => t.type === 'expense' && getEnvelopeInfo(t.envelope).type === 'investing').reduce((s,t) => s + t.amount, 0);
-    const net = inc - spd - inv;
-    dailyData[ds] = { inc, spd, inv, net, hasData: txs.length > 0 };
-    totalInc += inc; totalSpd += spd; totalInv += inv;
-  }
-  const totalSur = totalInc - totalSpd - totalInv;
-  document.getElementById('calIncome').textContent = formatMoney(totalInc);
-  document.getElementById('calSpending').textContent = formatMoney(totalSpd);
-  document.getElementById('calInvest').textContent = formatMoney(totalInv);
-  const se = document.getElementById('calSurplus'); se.textContent = (totalSur >= 0 ? '+' : '-') + formatMoney(Math.abs(totalSur)); se.className = 'value ' + (totalSur >= 0 ? 'net-positive' : 'net-negative');
-  // Build grid
-  const headers = ['一','二','三','四','五','六','日'];
-  let html = headers.map(h => `<div class="cal-header">${h}</div>`).join('');
-  // Empty cells before first day
-  for (let i = 0; i < startOffset; i++) html += '<div class="cal-cell empty"></div>';
-  for (let d = 1; d <= daysInMonth; d++) {
-    const ds = `${y}-${String(m+1).padStart(2,'0')}-${String(d).padStart(2,'0')}`;
-    const data = dailyData[ds];
-    let cls = 'cal-cell';
-    if (ds === todayStr) cls += ' today';
-    if (data.hasData) cls += data.net >= 0 ? ' positive' : ' negative';
-    let amountStr = '';
-    if (data.hasData) {
-      if (data.inc > 0 && data.spd === 0 && data.inv === 0) amountStr = `+${data.inc >= 1000 ? (data.inc/1000).toFixed(1)+'k' : data.inc.toFixed(0)}`;
-      else if (data.inc === 0 && (data.spd > 0 || data.inv > 0)) amountStr = `-${(data.spd+data.inv) >= 1000 ? ((data.spd+data.inv)/1000).toFixed(1)+'k' : (data.spd+data.inv).toFixed(0)}`;
-      else amountStr = `${data.net >= 0 ? '+' : ''}${Math.abs(data.net) >= 1000 ? (data.net/1000).toFixed(1)+'k' : data.net.toFixed(0)}`;
+function changeCalMonth(delta) {
+  if (currentStatPeriod === 'day') {
+    if (typeof calViewWeekStart === 'undefined' || calViewWeekStart === null) {
+      const now = new Date(); const dow = now.getDay() || 7;
+      const mon = new Date(now); mon.setDate(now.getDate() - dow + 1);
+      const fmt = (d) => `${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,'0')}-${String(d.getDate()).padStart(2,'0')}`;
+      calViewWeekStart = fmt(mon);
     }
-    html += `<div class="${cls}" onclick="selectCalDay('${ds}')"><div class="cal-date">${d}</div><div class="cal-amount">${amountStr}</div></div>`;
+    const cur = new Date(calViewWeekStart + 'T00:00:00');
+    cur.setDate(cur.getDate() + delta * 7);
+    const fmt = (d) => `${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,'0')}-${String(d.getDate()).padStart(2,'0')}`;
+    calViewWeekStart = fmt(cur);
+  } else if (currentStatPeriod === 'year') {
+    calViewYear += delta;
+  } else {
+    calViewMonth += delta;
+    if (calViewMonth > 11) { calViewMonth = 0; calViewYear++; }
+    else if (calViewMonth < 0) { calViewMonth = 11; calViewYear--; }
   }
-  document.getElementById('calendarGrid').innerHTML = html;
+  renderCalendar();
 }
-function selectCalDay(ds) { document.querySelectorAll('.cal-cell').forEach(c => c.classList.remove('selected')); event.currentTarget.classList.add('selected'); const txs = state.transactions.filter(t => t.date === ds); renderTxList('allTx', [...txs].sort((a,b) => (b.createdAt||0) - (a.createdAt||0))); }
+function renderCalendar() {
+  const grid = document.getElementById('calendarGrid');
+  const label = document.getElementById('calMonthLabel');
+  const now = new Date();
+  const fmt = (d) => `${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,'0')}-${String(d.getDate()).padStart(2,'0')}`;
+  const todayStr = fmt(now);
+  const y = calViewYear, m = calViewMonth;
+
+  if (currentStatPeriod === 'day') {
+    // Day view: show current week as 7-day strip
+    const dow = now.getDay() || 7;
+    const mon = new Date(y, m, now.getDate() - dow + 1);
+    // If navigating, use calViewYear/calViewMonth to determine the week
+    // We store calViewWeekStart as the Monday of the displayed week
+    if (typeof calViewWeekStart === 'undefined' || calViewWeekStart === null) {
+      calViewWeekStart = fmt(mon);
+    }
+    const weekMon = new Date(calViewWeekStart + 'T00:00:00');
+    const weekSun = new Date(weekMon); weekSun.setDate(weekMon.getDate() + 6);
+    label.textContent = `${weekMon.getMonth()+1}月${weekMon.getDate()}日 - ${weekSun.getMonth()+1}月${weekSun.getDate()}日`;
+    const headers = ['一','二','三','四','五','六','日'];
+    let html = headers.map(h => `<div class="cal-header">${h}</div>`).join('');
+    let totalInc=0, totalSpd=0, totalInv=0;
+    for (let i = 0; i < 7; i++) {
+      const d = new Date(weekMon); d.setDate(weekMon.getDate() + i);
+      const ds = fmt(d);
+      const txs = state.transactions.filter(t => t.date === ds);
+      const inc = txs.filter(t => t.type === 'income').reduce((s,t) => s + t.amount, 0);
+      const spd = txs.filter(t => t.type === 'expense' && getEnvelopeInfo(t.envelope).type === 'spending').reduce((s,t) => s + t.amount, 0);
+      const inv = txs.filter(t => t.type === 'expense' && getEnvelopeInfo(t.envelope).type === 'investing').reduce((s,t) => s + t.amount, 0);
+      const net = inc - spd - inv;
+      totalInc += inc; totalSpd += spd; totalInv += inv;
+      let cls = 'cal-day-cell';
+      if (ds === todayStr) cls += ' today';
+      if (txs.length > 0) cls += net >= 0 ? ' positive' : ' negative';
+      let amt = '';
+      if (txs.length > 0) {
+        if (inc > 0 && spd === 0 && inv === 0) amt = `+${inc>=1000?(inc/1000).toFixed(1)+'k':inc.toFixed(0)}`;
+        else if (inc === 0 && (spd > 0 || inv > 0)) amt = `-${(spd+inv)>=1000?((spd+inv)/1000).toFixed(1)+'k':(spd+inv).toFixed(0)}`;
+        else amt = `${net>=0?'+':''}${Math.abs(net)>=1000?(net/1000).toFixed(1)+'k':net.toFixed(0)}`;
+      }
+      html += `<div class="${cls}" onclick="selectCalDay('${ds}')"><div class="cal-date">${d.getDate()}</div><div class="cal-amount">${amt}</div></div>`;
+    }
+    const totalSur = totalInc - totalSpd - totalInv;
+    document.getElementById('calIncome').textContent = formatMoney(totalInc);
+    document.getElementById('calSpending').textContent = formatMoney(totalSpd);
+    document.getElementById('calInvest').textContent = formatMoney(totalInv);
+    const se = document.getElementById('calSurplus'); se.textContent = (totalSur>=0?'+':'-')+formatMoney(Math.abs(totalSur)); se.className = 'value '+(totalSur>=0?'net-positive':'net-negative');
+    grid.className = 'calendar-grid grid-days';
+    grid.innerHTML = html;
+  } else if (currentStatPeriod === 'week') {
+    // Week view: show weeks of the current month as blocks
+    label.textContent = `${y}年${m+1}月`;
+    const firstDay = new Date(y, m, 1).getDay();
+    const daysInMonth = new Date(y, m+1, 0).getDate();
+    let weeks = [];
+    let weekStart = 1;
+    let weekNum = 1;
+    while (weekStart <= daysInMonth) {
+      const weekEnd = Math.min(weekStart + 6, daysInMonth);
+      const startDs = `${y}-${String(m+1).padStart(2,'0')}-${String(weekStart).padStart(2,'0')}`;
+      const endDs = `${y}-${String(m+1).padStart(2,'0')}-${String(weekEnd).padStart(2,'0')}`;
+      weeks.push({ num: weekNum, start: weekStart, end: weekEnd, startDs, endDs });
+      weekStart = weekEnd + 1;
+      weekNum++;
+    }
+    let html = '';
+    let totalInc=0, totalSpd=0, totalInv=0;
+    weeks.forEach(wk => {
+      const txs = state.transactions.filter(t => t.date >= wk.startDs && t.date <= wk.endDs);
+      const inc = txs.filter(t => t.type === 'income').reduce((s,t) => s + t.amount, 0);
+      const spd = txs.filter(t => t.type === 'expense' && getEnvelopeInfo(t.envelope).type === 'spending').reduce((s,t) => s + t.amount, 0);
+      const inv = txs.filter(t => t.type === 'expense' && getEnvelopeInfo(t.envelope).type === 'investing').reduce((s,t) => s + t.amount, 0);
+      const net = inc - spd - inv;
+      totalInc += inc; totalSpd += spd; totalInv += inv;
+      let cls = 'cal-block';
+      if (txs.length > 0) cls += net >= 0 ? ' positive' : ' negative';
+      let amtLine = '';
+      if (txs.length > 0) {
+        amtLine = `<span style="color:${net>=0?'#00b894':'#e17055'}">${net>=0?'+':''}${Math.abs(net)>=1000?(net/1000).toFixed(1)+'k':net.toFixed(0)}</span>`;
+      }
+      html += `<div class="${cls}" onclick="selectCalWeek('${wk.startDs}','${wk.endDs}')"><div class="block-title">WK${wk.num}</div><div style="font-size:10px;color:var(--text-tertiary);margin-bottom:2px">${wk.start}-${wk.end}日</div><div class="block-amount">${amtLine}</div></div>`;
+    });
+    const totalSur = totalInc - totalSpd - totalInv;
+    document.getElementById('calIncome').textContent = formatMoney(totalInc);
+    document.getElementById('calSpending').textContent = formatMoney(totalSpd);
+    document.getElementById('calInvest').textContent = formatMoney(totalInv);
+    const se = document.getElementById('calSurplus'); se.textContent = (totalSur>=0?'+':'-')+formatMoney(Math.abs(totalSur)); se.className = 'value '+(totalSur>=0?'net-positive':'net-negative');
+    grid.className = 'calendar-grid grid-weeks';
+    grid.innerHTML = html;
+  } else if (currentStatPeriod === 'year') {
+    // Year view: show 12 months as blocks
+    label.textContent = `${y}年`;
+    const monthNames = ['1月','2月','3月','4月','5月','6月','7月','8月','9月','10月','11月','12月'];
+    let html = '';
+    let totalInc=0, totalSpd=0, totalInv=0;
+    for (let mi = 0; mi < 12; mi++) {
+      const startDs = `${y}-${String(mi+1).padStart(2,'0')}-01`;
+      const lastDay = new Date(y, mi+1, 0).getDate();
+      const endDs = `${y}-${String(mi+1).padStart(2,'0')}-${String(lastDay).padStart(2,'0')}`;
+      const txs = state.transactions.filter(t => t.date >= startDs && t.date <= endDs);
+      const inc = txs.filter(t => t.type === 'income').reduce((s,t) => s + t.amount, 0);
+      const spd = txs.filter(t => t.type === 'expense' && getEnvelopeInfo(t.envelope).type === 'spending').reduce((s,t) => s + t.amount, 0);
+      const inv = txs.filter(t => t.type === 'expense' && getEnvelopeInfo(t.envelope).type === 'investing').reduce((s,t) => s + t.amount, 0);
+      const net = inc - spd - inv;
+      totalInc += inc; totalSpd += spd; totalInv += inv;
+      let cls = 'cal-block';
+      if (mi === now.getMonth() && y === now.getFullYear()) cls += ' today';
+      if (txs.length > 0) cls += net >= 0 ? ' positive' : ' negative';
+      let amtLine = '';
+      if (txs.length > 0) {
+        amtLine = `<span style="color:${net>=0?'#00b894':'#e17055'}">${net>=0?'+':''}${Math.abs(net)>=1000?(net/1000).toFixed(1)+'k':net.toFixed(0)}</span>`;
+      }
+      html += `<div class="${cls}" onclick="selectCalMonth('${startDs}','${endDs}')"><div class="block-title">${monthNames[mi]}</div><div class="block-amount">${amtLine}</div></div>`;
+    }
+    const totalSur = totalInc - totalSpd - totalInv;
+    document.getElementById('calIncome').textContent = formatMoney(totalInc);
+    document.getElementById('calSpending').textContent = formatMoney(totalSpd);
+    document.getElementById('calInvest').textContent = formatMoney(totalInv);
+    const se = document.getElementById('calSurplus'); se.textContent = (totalSur>=0?'+':'-')+formatMoney(Math.abs(totalSur)); se.className = 'value '+(totalSur>=0?'net-positive':'net-negative');
+    grid.className = 'calendar-grid grid-year';
+    grid.innerHTML = html;
+  } else {
+    // Month view: original day grid
+    label.textContent = `${y}年${m+1}月`;
+    const firstDay = new Date(y, m, 1).getDay();
+    const daysInMonth = new Date(y, m+1, 0).getDate();
+    const startOffset = firstDay === 0 ? 6 : firstDay - 1;
+    const dailyData = {};
+    let totalInc = 0, totalSpd = 0, totalInv = 0;
+    for (let d = 1; d <= daysInMonth; d++) {
+      const ds = `${y}-${String(m+1).padStart(2,'0')}-${String(d).padStart(2,'0')}`;
+      const txs = state.transactions.filter(t => t.date === ds);
+      const inc = txs.filter(t => t.type === 'income').reduce((s,t) => s + t.amount, 0);
+      const spd = txs.filter(t => t.type === 'expense' && getEnvelopeInfo(t.envelope).type === 'spending').reduce((s,t) => s + t.amount, 0);
+      const inv = txs.filter(t => t.type === 'expense' && getEnvelopeInfo(t.envelope).type === 'investing').reduce((s,t) => s + t.amount, 0);
+      const net = inc - spd - inv;
+      dailyData[ds] = { inc, spd, inv, net, hasData: txs.length > 0 };
+      totalInc += inc; totalSpd += spd; totalInv += inv;
+    }
+    const totalSur = totalInc - totalSpd - totalInv;
+    document.getElementById('calIncome').textContent = formatMoney(totalInc);
+    document.getElementById('calSpending').textContent = formatMoney(totalSpd);
+    document.getElementById('calInvest').textContent = formatMoney(totalInv);
+    const se = document.getElementById('calSurplus'); se.textContent = (totalSur>=0?'+':'-')+formatMoney(Math.abs(totalSur)); se.className = 'value '+(totalSur>=0?'net-positive':'net-negative');
+    const headers = ['一','二','三','四','五','六','日'];
+    let html = headers.map(h => `<div class="cal-header">${h}</div>`).join('');
+    for (let i = 0; i < startOffset; i++) html += '<div class="cal-cell empty"></div>';
+    for (let d = 1; d <= daysInMonth; d++) {
+      const ds = `${y}-${String(m+1).padStart(2,'0')}-${String(d).padStart(2,'0')}`;
+      const data = dailyData[ds];
+      let cls = 'cal-cell';
+      if (ds === todayStr) cls += ' today';
+      if (data.hasData) cls += data.net >= 0 ? ' positive' : ' negative';
+      let amountStr = '';
+      if (data.hasData) {
+        if (data.inc > 0 && data.spd === 0 && data.inv === 0) amountStr = `+${data.inc >= 1000 ? (data.inc/1000).toFixed(1)+'k' : data.inc.toFixed(0)}`;
+        else if (data.inc === 0 && (data.spd > 0 || data.inv > 0)) amountStr = `-${(data.spd+data.inv) >= 1000 ? ((data.spd+data.inv)/1000).toFixed(1)+'k' : (data.spd+data.inv).toFixed(0)}`;
+        else amountStr = `${data.net >= 0 ? '+' : ''}${Math.abs(data.net) >= 1000 ? (data.net/1000).toFixed(1)+'k' : data.net.toFixed(0)}`;
+      }
+      html += `<div class="${cls}" onclick="selectCalDay('${ds}')"><div class="cal-date">${d}</div><div class="cal-amount">${amountStr}</div></div>`;
+    }
+    grid.className = 'calendar-grid';
+    grid.innerHTML = html;
+  }
+}
+function selectCalDay(ds) { document.querySelectorAll('.cal-cell,.cal-day-cell').forEach(c => c.classList.remove('selected')); event.currentTarget.classList.add('selected'); const txs = state.transactions.filter(t => t.date === ds); renderTxList('allTx', [...txs].sort((a,b) => (b.createdAt||0) - (a.createdAt||0))); }
+function selectCalWeek(startDs, endDs) { document.querySelectorAll('.cal-block').forEach(c => c.classList.remove('selected')); event.currentTarget.classList.add('selected'); const txs = state.transactions.filter(t => t.date >= startDs && t.date <= endDs); renderTxList('allTx', [...txs].sort((a,b) => b.date !== a.date ? b.date.localeCompare(a.date) : (b.createdAt||0) - (a.createdAt||0))); }
+function selectCalMonth(startDs, endDs) { document.querySelectorAll('.cal-block').forEach(c => c.classList.remove('selected')); event.currentTarget.classList.add('selected'); const txs = state.transactions.filter(t => t.date >= startDs && t.date <= endDs); renderTxList('allTx', [...txs].sort((a,b) => b.date !== a.date ? b.date.localeCompare(a.date) : (b.createdAt||0) - (a.createdAt||0))); }
 let statCompareChart = null;
 function renderStats() {
   const cr = getStatPeriodRange(currentStatPeriod);
