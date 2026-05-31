@@ -9,7 +9,459 @@
 <meta name="theme-color" content="#6c5ce7">
 <link rel="icon" type="image/png" sizes="192x192" href="icons/icon-192.png">
 <link rel="icon" type="image/x-icon" href="favicon.ico">
-<script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.umd.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.umd.min.js">
+// ==================== 行动页面 - 数据存储 ====================
+const ACTION_STORAGE_KEY = 'zhizhang_actions';
+const HABIT_STORAGE_KEY = 'zhizhang_habits';
+const DEFAULT_HABITS = [
+  { id: 'swim', name: '游泳', emoji: '🏊' },
+  { id: 'gym', name: '健身', emoji: '🏋️' },
+  { id: 'read', name: '读书', emoji: '📖' },
+  { id: 'write', name: '写作', emoji: '✍️' },
+  { id: 'meditate', name: '冥想', emoji: '🧘' }
+];
+
+let actionState = { actions: {} };
+let habitState = { habits: [], logs: {} };
+let currentActionMonth = new Date();
+let currentActionDate = new Date().toISOString().split('T')[0];
+let currentHabitPeriod = 'week';
+let currentHabitPeriodIndex = 0;
+let currentActionSubTab = 'list';
+
+function loadActionState() {
+  try {
+    const saved = localStorage.getItem(ACTION_STORAGE_KEY);
+    if (saved) {
+      actionState = JSON.parse(saved);
+      if (!actionState.actions) actionState.actions = {};
+    }
+  } catch(e) { console.error('Load action state error:', e); }
+}
+function saveActionState() {
+  try { localStorage.setItem(ACTION_STORAGE_KEY, JSON.stringify(actionState)); } catch(e) { console.error('Save action state error:', e); }
+}
+function loadHabitState() {
+  try {
+    const saved = localStorage.getItem(HABIT_STORAGE_KEY);
+    if (saved) {
+      habitState = JSON.parse(saved);
+      if (!habitState.habits) habitState.habits = [];
+      if (!habitState.logs) habitState.logs = {};
+    } else {
+      habitState = { habits: [...DEFAULT_HABITS], logs: {} };
+      saveHabitState();
+    }
+  } catch(e) { console.error('Load habit state error:', e); }
+}
+function saveHabitState() {
+  try { localStorage.setItem(HABIT_STORAGE_KEY, JSON.stringify(habitState)); } catch(e) { console.error('Save habit state error:', e); }
+}
+
+// ==================== 行动页面 - 主函数 ====================
+function setActionSubTab(tab, btn) {
+  currentActionSubTab = tab;
+  document.querySelectorAll('.action-sub-tab').forEach(t => t.classList.remove('active'));
+  btn.classList.add('active');
+  document.getElementById('actionListSection').style.display = tab === 'list' ? 'block' : 'none';
+  document.getElementById('actionHabitSection').style.display = tab === 'habit' ? 'block' : 'none';
+  if (tab === 'habit') renderHabitSection();
+}
+
+function renderActionPage() {
+  if (currentActionSubTab === 'list') {
+    renderActionCalendar();
+    renderActionList();
+  } else {
+    renderHabitSection();
+  }
+}
+
+function changeActionMonth(delta) {
+  currentActionMonth.setMonth(currentActionMonth.getMonth() + delta);
+  renderActionCalendar();
+}
+
+function renderActionCalendar() {
+  const grid = document.getElementById('actionCalendarGrid');
+  const label = document.getElementById('actionMonthLabel');
+  const now = new Date();
+  const fmt = (d) => `${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,'0')}-${String(d.getDate()).padStart(2,'0')}`;
+  const todayStr = fmt(now);
+  const y = currentActionMonth.getFullYear();
+  const m = currentActionMonth.getMonth();
+  
+  label.textContent = `${y}年${m+1}月`;
+  const firstDay = new Date(y, m, 1).getDay();
+  const daysInMonth = new Date(y, m+1, 0).getDate();
+  const startOffset = firstDay === 0 ? 6 : firstDay - 1;
+  
+  const headers = ['一','二','三','四','五','六','日'];
+  let html = headers.map(h => `<div class="action-cal-header">${h}</div>`).join('');
+  
+  for (let i = 0; i < startOffset; i++) html += '<div class="action-cal-cell empty"></div>';
+  
+  for (let d = 1; d <= daysInMonth; d++) {
+    const ds = `${y}-${String(m+1).padStart(2,'0')}-${String(d).padStart(2,'0')}`;
+    const dayActions = actionState.actions[ds] || [];
+    const hasPending = dayActions.some(a => !a.done);
+    const hasDone = dayActions.some(a => a.done);
+    const hasActions = dayActions.length > 0;
+    
+    let cls = 'action-cal-cell';
+    if (ds === todayStr) cls += ' today';
+    if (ds === currentActionDate) cls += ' selected';
+    
+    let dotHtml = '';
+    if (hasActions) {
+      const dotColor = hasPending ? 'blue' : 'green';
+      dotHtml = `<span class="cal-dot ${dotColor}"></span>`;
+    }
+    
+    html += `<div class="${cls}" onclick="selectActionDate('${ds}')"><div class="cal-date">${d}</div>${dotHtml}</div>`;
+  }
+  
+  grid.innerHTML = html;
+}
+
+function selectActionDate(ds) {
+  currentActionDate = ds;
+  renderActionCalendar();
+  renderActionList();
+}
+
+function renderActionList() {
+  const container = document.getElementById('actionItemsList');
+  const dateLabel = document.getElementById('actionListDate');
+  const countLabel = document.getElementById('actionListCount');
+  
+  const today = new Date().toISOString().split('T')[0];
+  const yesterday = new Date(); yesterday.setDate(yesterday.getDate() - 1);
+  const yesterdayStr = yesterday.toISOString().split('T')[0];
+  
+  if (currentActionDate === today) dateLabel.textContent = '今天';
+  else if (currentActionDate === yesterdayStr) dateLabel.textContent = '昨天';
+  else {
+    const d = new Date(currentActionDate);
+    dateLabel.textContent = `${d.getMonth()+1}月${d.getDate()}日`;
+  }
+  
+  const actions = actionState.actions[currentActionDate] || [];
+  countLabel.textContent = `${actions.length}条行动`;
+  
+  if (actions.length === 0) {
+    container.innerHTML = '<div class="action-empty">暂无行动，添加一条吧~</div>';
+    return;
+  }
+  
+  let html = '';
+  actions.forEach((action, idx) => {
+    const doneCls = action.done ? 'done' : '';
+    const checkedCls = action.done ? 'checked' : '';
+    html += `<div class="action-item ${doneCls}" data-idx="${idx}">
+      <div class="action-checkbox ${checkedCls}" onclick="toggleAction(${idx})">${action.done?'✓':''}</div>
+      <div class="action-text">${escapeHtml(action.text)}</div>
+      <div class="action-delete" onclick="deleteAction(${idx})">删除</div>
+    </div>`;
+  });
+  
+  container.innerHTML = html;
+  
+  // 添加滑动删除功能
+  container.querySelectorAll('.action-item').forEach(item => {
+    let startX = 0;
+    item.addEventListener('touchstart', e => { startX = e.touches[0].clientX; }, { passive: true });
+    item.addEventListener('touchend', e => {
+      const diff = e.changedTouches[0].clientX - startX;
+      if (diff < -50) item.classList.add('show-delete');
+      else if (diff > 50) item.classList.remove('show-delete');
+    });
+    item.addEventListener('click', e => {
+      if (!item.classList.contains('show-delete')) return;
+      if (e.target.classList.contains('action-delete')) return;
+      item.classList.remove('show-delete');
+    });
+  });
+}
+
+function addAction() {
+  const input = document.getElementById('actionInput');
+  const text = input.value.trim();
+  if (!text) return;
+  
+  if (!actionState.actions[currentActionDate]) {
+    actionState.actions[currentActionDate] = [];
+  }
+  
+  actionState.actions[currentActionDate].push({
+    id: 'act_' + Date.now(),
+    text: text,
+    done: false,
+    createdAt: Date.now()
+  });
+  
+  saveActionState();
+  input.value = '';
+  renderActionCalendar();
+  renderActionList();
+}
+
+function toggleAction(idx) {
+  const actions = actionState.actions[currentActionDate];
+  if (!actions || !actions[idx]) return;
+  actions[idx].done = !actions[idx].done;
+  if (actions[idx].done && !actions[idx].doneAt) {
+    actions[idx].doneAt = Date.now();
+  }
+  saveActionState();
+  renderActionCalendar();
+  renderActionList();
+}
+
+function deleteAction(idx) {
+  const actions = actionState.actions[currentActionDate];
+  if (!actions) return;
+  actions.splice(idx, 1);
+  if (actions.length === 0) delete actionState.actions[currentActionDate];
+  saveActionState();
+  renderActionCalendar();
+  renderActionList();
+}
+
+function escapeHtml(str) {
+  const div = document.createElement('div');
+  div.textContent = str;
+  return div.innerHTML;
+}
+
+// ==================== 习惯打卡功能 ====================
+function getHabitPeriodRange() {
+  const now = new Date();
+  const fmt = (d) => `${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,'0')}-${String(d.getDate()).padStart(2,'0')}`;
+  
+  if (currentHabitPeriod === 'week') {
+    const dow = now.getDay() || 7;
+    const mon = new Date(now); mon.setDate(now.getDate() - dow + 1 - currentHabitPeriodIndex * 7);
+    const sun = new Date(mon); sun.setDate(mon.getDate() + 6);
+    return { start: fmt(mon), end: fmt(sun), label: `${mon.getMonth()+1}/${mon.getDate()}-${sun.getMonth()+1}/${sun.getDate()}` };
+  } else if (currentHabitPeriod === 'month') {
+    const start = new Date(now.getFullYear(), now.getMonth() - currentHabitPeriodIndex, 1);
+    const end = new Date(now.getFullYear(), now.getMonth() - currentHabitPeriodIndex + 1, 0);
+    return { start: fmt(start), end: fmt(end), label: `${start.getFullYear()}年${start.getMonth()+1}月` };
+  } else {
+    const year = now.getFullYear() - currentHabitPeriodIndex;
+    return { start: `${year}-01-01`, end: `${year}-12-31`, label: `${year}年` };
+  }
+}
+
+function changeHabitPeriod(delta) {
+  if (currentHabitPeriod === 'week') {
+    currentHabitPeriodIndex += delta;
+  } else if (currentHabitPeriod === 'month') {
+    currentHabitPeriodIndex += delta;
+  } else {
+    currentHabitPeriodIndex += delta;
+  }
+  renderHabitSection();
+}
+
+function renderHabitSection() {
+  loadHabitState();
+  const period = getHabitPeriodRange();
+  document.getElementById('habitPeriodLabel').textContent = period.label;
+  
+  // 渲染统计卡片
+  renderHabitStats();
+  // 渲染习惯标签
+  renderHabitTags();
+}
+
+function renderHabitStats() {
+  const container = document.getElementById('habitStatsCards');
+  const period = getHabitPeriodRange();
+  const totalDays = getDaysInPeriod(period.start, period.end);
+  
+  let html = '';
+  habitState.habits.forEach(habit => {
+    const logs = getHabitLogsInPeriod(habit.id, period.start, period.end);
+    const totalCount = logs.reduce((s, l) => s + (l.count || 1), 0);
+    const pct = totalDays > 0 ? Math.min((logs.length / totalDays) * 100, 100) : 0;
+    
+    html += `<div class="habit-stats-card" onclick="toggleHabitCheck('${habit.id}')">
+      <div class="habit-stats-left">
+        <span class="habit-stats-emoji">${habit.emoji}</span>
+        <div class="habit-stats-info">
+          <div class="habit-stats-name">${escapeHtml(habit.name)}</div>
+          <div class="habit-stats-count">${period.label} · ${logs.length}/${totalDays}天</div>
+        </div>
+      </div>
+      <div class="habit-stats-value">${totalCount}次</div>
+    </div>`;
+  });
+  
+  container.innerHTML = html;
+}
+
+function renderHabitTags() {
+  const container = document.getElementById('habitTagsList');
+  const today = new Date().toISOString().split('T')[0];
+  const todayLogs = habitState.logs[today] || [];
+  
+  let html = '';
+  habitState.habits.forEach(habit => {
+    const log = todayLogs.find(l => l.habitId === habit.id);
+    const isChecked = !!log;
+    const checkedCls = isChecked ? 'checked' : '';
+    
+    html += `<div class="habit-card ${checkedCls}" onclick="showHabitNotePopup('${habit.id}')">
+      <span class="habit-emoji">${habit.emoji}</span>
+      <div class="habit-info">
+        <div class="habit-name">${escapeHtml(habit.name)}</div>
+        <div class="habit-count">${isChecked ? '已打卡 ' + (log.count > 1 ? log.count + '次' : '') : '点击打卡'}</div>
+        <div class="habit-progress-bg"><div class="habit-progress-fill" style="width:${getHabitPeriodProgress(habit.id)}%"></div></div>
+      </div>
+      <button class="habit-check-btn ${checkedCls}" onclick="event.stopPropagation();toggleHabitCheck('${habit.id}')">${isChecked?'✓':'○'}</button>
+    </div>`;
+  });
+  
+  container.innerHTML = html;
+}
+
+function getDaysInPeriod(start, end) {
+  const s = new Date(start);
+  const e = new Date(end);
+  return Math.ceil((e - s) / (1000 * 60 * 60 * 24)) + 1;
+}
+
+function getHabitLogsInPeriod(habitId, start, end) {
+  const logs = [];
+  for (const [date, dayLogs] of Object.entries(habitState.logs)) {
+    if (date >= start && date <= end) {
+      const log = dayLogs.find(l => l.habitId === habitId);
+      if (log) logs.push(log);
+    }
+  }
+  return logs;
+}
+
+function getHabitPeriodProgress(habitId) {
+  const period = getHabitPeriodRange();
+  const totalDays = getDaysInPeriod(period.start, period.end);
+  const logs = getHabitLogsInPeriod(habitId, period.start, period.end);
+  return totalDays > 0 ? Math.min((logs.length / totalDays) * 100, 100) : 0;
+}
+
+function toggleHabitCheck(habitId) {
+  const today = new Date().toISOString().split('T')[0];
+  if (!habitState.logs[today]) habitState.logs[today] = [];
+  
+  const idx = habitState.logs[today].findIndex(l => l.habitId === habitId);
+  if (idx >= 0) {
+    habitState.logs[today].splice(idx, 1);
+  } else {
+    habitState.logs[today].push({ habitId, count: 1, note: '', checkedAt: Date.now() });
+  }
+  
+  saveHabitState();
+  renderHabitStats();
+  renderHabitTags();
+}
+
+let currentHabitNoteHabitId = null;
+
+function showHabitNotePopup(habitId) {
+  currentHabitNoteHabitId = habitId;
+  const popup = document.getElementById('habitNotePopup');
+  const habit = habitState.habits.find(h => h.id === habitId);
+  const today = new Date().toISOString().split('T')[0];
+  const existingLog = (habitState.logs[today] || []).find(l => l.habitId === habitId);
+  
+  document.getElementById('habitNoteTitle').textContent = `${habit ? habit.emoji : ''} ${habit ? habit.name : ''}打卡`;
+  document.getElementById('habitNoteInput').value = existingLog && existingLog.note ? existingLog.note : '';
+  document.getElementById('habitNoteInput').placeholder = '选填，如"3章"、"1小时"';
+  
+  popup.classList.add('show');
+  setTimeout(() => document.getElementById('habitNoteInput').focus(), 100);
+}
+
+function confirmHabitNote() {
+  const note = document.getElementById('habitNoteInput').value.trim();
+  const today = new Date().toISOString().split('T')[0];
+  
+  if (!habitState.logs[today]) habitState.logs[today] = [];
+  
+  const existingIdx = habitState.logs[today].findIndex(l => l.habitId === currentHabitNoteHabitId);
+  if (existingIdx >= 0) {
+    habitState.logs[today][existingIdx].note = note;
+    habitState.logs[today][existingIdx].count = 1;
+  } else {
+    habitState.logs[today].push({ habitId: currentHabitNoteHabitId, count: 1, note: note, checkedAt: Date.now() });
+  }
+  
+  saveHabitState();
+  closeHabitNotePopup();
+  renderHabitStats();
+  renderHabitTags();
+}
+
+function closeHabitNotePopup() {
+  document.getElementById('habitNotePopup').classList.remove('show');
+  currentHabitNoteHabitId = null;
+}
+
+function showAddHabitModal() {
+  const emojis = ['🏃','🚴','🧘','💪','🏊','⚽','🏀','🎾','🏋️','🤸','⛹️','🧗','🏄','🏂','🎣','🚣','🏇','🧗‍♀️','💃','🎸','🎨','🎭','🎬','✍️','📖','📚','💻','🎯','🧠','🌟','🌱','💧','🍎','🥗','😴','💤','🌞','🌙'];
+  let selectedEmoji = '✨';
+  
+  document.getElementById('modalTitle').textContent = '添加习惯';
+  document.getElementById('modalBody').innerHTML = `
+    <div class="field-group">
+      <label>选择图标</label>
+      <div style="font-size:32px;margin-bottom:8px;text-align:center" id="newHabitEmojiDisplay">${selectedEmoji}</div>
+      <div class="emoji-grid">${emojis.map(e => `<button class="emoji-option ${e===selectedEmoji?'selected':''}" onclick="this.parentElement.querySelectorAll('.emoji-option').forEach(b=>b.classList.remove('selected'));this.classList.add('selected');document.getElementById('newHabitEmojiDisplay').textContent='${e}';window._newHabitEmoji='${e}'">${e}</button>`).join('')}</div>
+    </div>
+    <div class="field-group">
+      <label>习惯名称</label>
+      <input class="modal-input" id="newHabitName" placeholder="如：晨跑、记单词">
+    </div>
+    <button class="modal-btn primary" onclick="doAddHabit()">确定添加</button>
+    <button class="modal-btn secondary" onclick="closeModalDirect()">取消</button>
+  `;
+  window._newHabitEmoji = selectedEmoji;
+  document.getElementById('modalOverlay').classList.add('show');
+}
+
+function doAddHabit() {
+  const name = document.getElementById('newHabitName').value.trim();
+  const emoji = window._newHabitEmoji || '✨';
+  
+  if (!name) {
+    showToast('请输入习惯名称');
+    return;
+  }
+  
+  habitState.habits.push({ id: 'habit_' + Date.now(), name, emoji });
+  saveHabitState();
+  closeModalDirect();
+  renderHabitStats();
+  renderHabitTags();
+  showToast('习惯已添加');
+}
+
+function setHabitPeriod(period) {
+  currentHabitPeriod = period;
+  currentHabitPeriodIndex = 0;
+  document.querySelectorAll('.period-tab').forEach(t => {
+    if (t.textContent === (period === 'week' ? '周' : period === 'month' ? '月' : '年')) {
+      t.classList.add('active');
+    } else {
+      t.classList.remove('active');
+    }
+  });
+  renderHabitSection();
+}
+
+</script>
 <style>
 :root {
   --bg: #f5f7fa; --bg-card: #ffffff; --bg-input: #f0f2f5;
@@ -498,6 +950,83 @@ body { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', 'PingFang SC'
 .invest-account-field.show { display: block; }
 .account-section-header { font-size: 12px; padding: 8px 0 4px; display: flex; align-items: center; gap: 4px; }
 @media(min-width:768px) { .page-content { padding: 0 24px 24px; } }
+
+/* ===== 行动页面样式 ===== */
+.action-section { margin-bottom: 20px; }
+.action-section-title { font-size: 14px; font-weight: 600; margin-bottom: 10px; display: flex; align-items: center; gap: 6px; }
+.action-cal-nav { display: flex; align-items: center; justify-content: space-between; padding: 8px 0; margin-bottom: 8px; }
+.action-cal-nav span { font-size: 15px; font-weight: 600; color: var(--text-primary); }
+.action-cal-grid { display: grid; grid-template-columns: repeat(7, 1fr); gap: 3px; margin-bottom: 8px; }
+.action-cal-header { text-align: center; font-size: 11px; color: var(--text-tertiary); padding: 4px 0; font-weight: 500; }
+.action-cal-cell { text-align: center; padding: 4px 2px; border-radius: 8px; min-height: 40px; display: flex; flex-direction: column; align-items: center; justify-content: center; cursor: pointer; transition: all 0.15s; }
+.action-cal-cell:hover { background: var(--bg-input); }
+.action-cal-cell.empty { cursor: default; }
+.action-cal-cell.empty:hover { background: transparent; }
+.action-cal-cell .cal-date { font-size: 12px; color: var(--text-secondary); margin-bottom: 2px; line-height: 1; }
+.action-cal-cell .cal-dot { width: 6px; height: 6px; border-radius: 50%; }
+.action-cal-cell.today { border: 2px solid var(--primary); }
+.action-cal-cell.today .cal-date { color: var(--primary); font-weight: 700; }
+.action-cal-cell.selected { background: var(--primary); }
+.action-cal-cell.selected .cal-date { color: #fff !important; }
+.action-cal-cell.selected .cal-dot.blue { background: #fff; }
+.action-cal-cell.selected .cal-dot.green { background: #fff; }
+.action-list-container { background: var(--bg-card); border-radius: var(--radius); padding: 16px; box-shadow: var(--shadow); }
+.action-list-header { font-size: 13px; color: var(--text-secondary); margin-bottom: 12px; display: flex; align-items: center; justify-content: space-between; }
+.action-item { display: flex; align-items: center; gap: 12px; padding: 12px 0; border-bottom: 1px solid var(--border); position: relative; overflow: hidden; }
+.action-item:last-child { border-bottom: none; }
+.action-item.done .action-text { text-decoration: line-through; color: var(--text-tertiary); }
+.action-checkbox { width: 22px; height: 22px; border-radius: 50%; border: 2px solid var(--border); cursor: pointer; display: flex; align-items: center; justify-content: center; flex-shrink: 0; transition: all 0.2s; }
+.action-checkbox.checked { background: var(--income); border-color: var(--income); color: #fff; font-size: 12px; }
+.action-text { flex: 1; font-size: 14px; }
+.action-delete { position: absolute; right: -50px; top: 0; bottom: 0; width: 50px; background: var(--expense); color: #fff; display: flex; align-items: center; justify-content: center; transition: right 0.3s; cursor: pointer; font-size: 13px; }
+.action-item.show-delete .action-delete { right: 0; }
+.action-input-row { display: flex; gap: 10px; margin-top: 12px; }
+.action-input-row input { flex: 1; padding: 10px 14px; background: var(--bg-input); border: 2px solid transparent; border-radius: var(--radius-sm); color: var(--text); font-size: 14px; outline: none; font-family: inherit; }
+.action-input-row input:focus { border-color: var(--primary); }
+.action-input-row input::placeholder { color: var(--text-tertiary); }
+.action-input-row button { padding: 10px 16px; background: var(--primary); color: #fff; border: none; border-radius: var(--radius-sm); font-size: 14px; cursor: pointer; font-family: inherit; }
+.action-empty { text-align: center; padding: 20px; color: var(--text-tertiary); font-size: 13px; }
+.action-dot-legend { display: flex; gap: 16px; justify-content: center; margin-bottom: 8px; font-size: 11px; color: var(--text-tertiary); }
+.action-dot-legend-item { display: flex; align-items: center; gap: 4px; }
+.action-sub-tabs { display: flex; gap: 0; background: var(--bg-input); border-radius: var(--radius-sm); padding: 3px; margin-bottom: 16px; }
+.action-sub-tab { flex: 1; padding: 8px 4px; border: none; background: none; border-radius: 8px; font-size: 13px; font-weight: 500; cursor: pointer; color: var(--text-secondary); font-family: inherit; text-align: center; transition: all 0.2s; }
+.action-sub-tab.active { background: var(--primary); color: #fff; }
+.habit-card { background: var(--bg-card); border-radius: var(--radius-sm); padding: 14px; margin-bottom: 10px; box-shadow: var(--shadow); display: flex; align-items: center; gap: 12px; cursor: pointer; transition: all 0.2s; }
+.habit-card:active { transform: scale(0.98); }
+.habit-card.checked { background: var(--primary-bg); border: 2px solid var(--primary); }
+.habit-emoji { font-size: 28px; flex-shrink: 0; }
+.habit-info { flex: 1; min-width: 0; }
+.habit-name { font-size: 14px; font-weight: 500; margin-bottom: 4px; }
+.habit-count { font-size: 12px; color: var(--text-secondary); }
+.habit-progress-bg { width: 100%; height: 6px; background: var(--bg-input); border-radius: 3px; overflow: hidden; margin-top: 6px; }
+.habit-progress-fill { height: 100%; background: var(--primary); border-radius: 3px; transition: width 0.3s; }
+.habit-check-btn { width: 36px; height: 36px; border-radius: 50%; border: 2px solid var(--border); background: none; font-size: 16px; cursor: pointer; display: flex; align-items: center; justify-content: center; flex-shrink: 0; transition: all 0.2s; }
+.habit-check-btn.checked { background: var(--income); border-color: var(--income); color: #fff; }
+.habit-stats-card { background: var(--bg-card); border-radius: var(--radius); padding: 16px; margin-bottom: 12px; box-shadow: var(--shadow); display: flex; align-items: center; justify-content: space-between; }
+.habit-stats-left { display: flex; align-items: center; gap: 10px; }
+.habit-stats-emoji { font-size: 32px; }
+.habit-stats-info .habit-stats-name { font-size: 15px; font-weight: 600; margin-bottom: 2px; }
+.habit-stats-info .habit-stats-count { font-size: 12px; color: var(--text-secondary); }
+.habit-stats-value { font-size: 24px; font-weight: 700; color: var(--primary); }
+.add-habit-btn { width: 100%; padding: 14px; background: var(--primary-bg); border: 2px dashed var(--primary); border-radius: var(--radius-sm); font-size: 14px; color: var(--primary); cursor: pointer; font-family: inherit; text-align: center; }
+.add-habit-btn:active { transform: scale(0.98); }
+.habit-count-input { position: absolute; top: 100%; left: 0; right: 0; background: var(--bg-card); border-radius: var(--radius-sm); padding: 10px; box-shadow: var(--shadow-lg); z-index: 10; margin-top: 4px; display: none; }
+.habit-count-input.show { display: block; }
+.habit-count-input input { width: 100%; padding: 8px 10px; background: var(--bg-input); border: 2px solid transparent; border-radius: var(--radius-sm); color: var(--text); font-size: 13px; outline: none; font-family: inherit; margin-bottom: 8px; }
+.habit-count-input input:focus { border-color: var(--primary); }
+.habit-count-input-btns { display: flex; gap: 8px; }
+.habit-count-input-btns button { flex: 1; padding: 8px; border: none; border-radius: 8px; font-size: 13px; cursor: pointer; font-family: inherit; }
+.habit-count-input-btns .confirm { background: var(--primary); color: #fff; }
+.habit-count-input-btns .cancel { background: var(--bg-input); color: var(--text-secondary); }
+.habit-note-popup { position: fixed; top: 50%; left: 50%; transform: translate(-50%, -50%); background: var(--bg-card); border-radius: var(--radius); padding: 20px; width: 280px; box-shadow: var(--shadow-lg); z-index: 1001; display: none; }
+.habit-note-popup.show { display: block; }
+.habit-note-popup-title { font-size: 15px; font-weight: 600; margin-bottom: 12px; text-align: center; }
+.habit-note-popup input { width: 100%; padding: 10px 12px; background: var(--bg-input); border: 2px solid transparent; border-radius: var(--radius-sm); color: var(--text); font-size: 14px; outline: none; font-family: inherit; margin-bottom: 12px; }
+.habit-note-popup input:focus { border-color: var(--primary); }
+.habit-note-popup-btns { display: flex; gap: 10px; }
+.habit-note-popup-btns button { flex: 1; padding: 10px; border: none; border-radius: var(--radius-sm); font-size: 14px; cursor: pointer; font-family: inherit; }
+.habit-note-popup-btns .confirm { background: var(--primary); color: #fff; }
+.habit-note-popup-btns .cancel { background: var(--bg-input); color: var(--text-secondary); }
 </style>
 </head>
 <body>
@@ -640,6 +1169,47 @@ body { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', 'PingFang SC'
       <div class="chart-container"><div class="card-title">📈 净结余趋势</div><canvas id="netAssetTrendChart"></canvas></div>
       <div class="chart-container"><div class="card-title">📊 财富增长</div><canvas id="wealthGrowthChart"></canvas></div>
     </div>
+    <div class="page" id="page-action">
+      <div class="page-header"><div>📝 行动</div></div>
+      <div class="action-sub-tabs">
+        <button class="action-sub-tab active" id="actionListTabBtn" onclick="setActionSubTab('list',this)">📋 行动清单</button>
+        <button class="action-sub-tab" id="actionHabitTabBtn" onclick="setActionSubTab('habit',this)">📊 习惯打卡</button>
+      </div>
+      <div id="actionListSection">
+        <div class="action-cal-nav">
+          <button class="cal-nav-btn" onclick="changeActionMonth(-1)">◀</button>
+          <span id="actionMonthLabel"></span>
+          <button class="cal-nav-btn" onclick="changeActionMonth(1)">▶</button>
+        </div>
+        <div class="action-cal-grid" id="actionCalendarGrid"></div>
+        <div class="action-dot-legend">
+          <span class="action-dot-legend-item"><span class="cal-dot" style="background:#6c5ce7"></span>有未完成</span>
+          <span class="action-dot-legend-item"><span class="cal-dot" style="background:#00b894"></span>全部完成</span>
+        </div>
+        <div class="action-list-container">
+          <div class="action-list-header">
+            <span id="actionListDate">今天</span>
+            <span id="actionListCount">0条行动</span>
+          </div>
+          <div id="actionItemsList"></div>
+          <div class="action-input-row">
+            <input type="text" id="actionInput" placeholder="添加新行动，回车确认" onkeypress="if(event.key==='Enter')addAction()">
+            <button onclick="addAction()">添加</button>
+          </div>
+        </div>
+      </div>
+      <div id="actionHabitSection" style="display:none">
+        <div class="action-cal-nav">
+          <button class="cal-nav-btn" onclick="changeHabitPeriod(-1)">◀</button>
+          <span id="habitPeriodLabel">本周</span>
+          <button class="cal-nav-btn" onclick="changeHabitPeriod(1)">▶</button>
+        </div>
+        <div id="habitStatsCards"></div>
+        <div class="section-title">🏷️ 习惯标签</div>
+        <div id="habitTagsList"></div>
+        <div class="add-habit-btn" onclick="showAddHabitModal()">+ 添加自定义习惯</div>
+      </div>
+    </div>
     <div class="page" id="page-settings">
       <div class="page-header"><div>⚙️ 设置</div></div>
       <div class="setting-group">
@@ -708,11 +1278,21 @@ body { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', 'PingFang SC'
     <button class="tab-item" onclick="switchPage('stats')"><span class="tab-icon">📊</span><span class="tab-label">统计</span></button>
     <button class="tab-item record-tab" onclick="switchPage('record')"><span class="tab-icon">➕</span><span class="tab-label">记账</span></button>
     <button class="tab-item" onclick="switchPage('wealth')"><span class="tab-icon">💎</span><span class="tab-label">财富</span></button>
+    <button class="tab-item" onclick="switchPage('action')"><span class="tab-icon">📝</span><span class="tab-label">行动</span></button>
     <button class="tab-item" onclick="switchPage('settings')"><span class="tab-icon">⚙️</span><span class="tab-label">设置</span></button>
   </div>
 </div>
 <div class="modal-overlay" id="modalOverlay" onclick="closeModal(event)"><div class="modal" id="modalContent" onclick="event.stopPropagation()"><div class="modal-title" id="modalTitle"></div><div id="modalBody"></div></div></div>
 <div class="toast" id="toast"></div>
+<div class="habit-note-popup" id="habitNotePopup">
+  <div class="habit-note-popup-title" id="habitNoteTitle">打卡</div>
+  <input type="text" id="habitNoteInput" placeholder="选填，如"3章"、"1小时"">
+  <div class="habit-note-popup-btns">
+    <button class="confirm" onclick="confirmHabitNote()">确认</button>
+    <button class="cancel" onclick="closeHabitNotePopup()">取消</button>
+  </div>
+</div>
+
 <script>
 const DEFAULT_ACCOUNTS = [
   { id: 'cash', name: '现金', icon: '💵', type: 'asset', balance: 0 },
@@ -939,8 +1519,8 @@ function switchPage(page) {
   document.querySelectorAll('.page').forEach(p => p.classList.remove('active'));
   document.getElementById('page-' + page).classList.add('active');
   document.querySelectorAll('.tab-item').forEach(t => t.classList.remove('active'));
-  document.querySelectorAll('.tab-item')[{ overview: 0, stats: 1, record: 2, wealth: 3, settings: 4 }[page]].classList.add('active');
-  if (page === 'overview') renderOverview(); if (page === 'record') renderRecordPage(); if (page === 'stats') renderStats(); if (page === 'wealth') renderWealth(); if (page === 'settings') renderSettings();
+  document.querySelectorAll('.tab-item')[{ overview: 0, stats: 1, record: 2, wealth: 3, action: 4, settings: 5 }[page]].classList.add('active');
+  if (page === 'overview') renderOverview(); if (page === 'record') renderRecordPage(); if (page === 'stats') renderStats(); if (page === 'wealth') renderWealth(); if (page === 'action') renderActionPage(); if (page === 'settings') renderSettings();
 }
 function showToast(msg) { const t = document.getElementById('toast'); t.textContent = msg; t.classList.add('show'); setTimeout(() => t.classList.remove('show'), 2500); }
 function formatMoney(n) { return '¥' + Math.abs(n).toFixed(2).replace(/\B(?=(\d{3})+(?!\d))/g, ','); }
@@ -1739,8 +2319,460 @@ function initGlacierSnow() {
   }
 }
 function initThemeDecorations() { initSakuraPetals(); initMatchaLeaves(); initLavenderStars(); initCatPaws(); initGlacierSnow(); }
-function init() { loadState(); setTheme(state.theme); initThemeDecorations(); document.getElementById('recordInput').addEventListener('input', handleInputChange); document.getElementById('expenseEnvelopeSelect').addEventListener('change', updateInvestAccountField); document.getElementById('expenseCategorySelect').addEventListener('change', onCategoryChange); renderOverview(); }
+function init() { loadState(); loadActionState(); loadHabitState(); setTheme(state.theme); initThemeDecorations(); document.getElementById('recordInput').addEventListener('input', handleInputChange); document.getElementById('expenseEnvelopeSelect').addEventListener('change', updateInvestAccountField); document.getElementById('expenseCategorySelect').addEventListener('change', onCategoryChange); renderOverview(); }
 document.addEventListener('DOMContentLoaded', init);
+
+// ==================== 行动页面 - 数据存储 ====================
+const ACTION_STORAGE_KEY = 'zhizhang_actions';
+const HABIT_STORAGE_KEY = 'zhizhang_habits';
+const DEFAULT_HABITS = [
+  { id: 'swim', name: '游泳', emoji: '🏊' },
+  { id: 'gym', name: '健身', emoji: '🏋️' },
+  { id: 'read', name: '读书', emoji: '📖' },
+  { id: 'write', name: '写作', emoji: '✍️' },
+  { id: 'meditate', name: '冥想', emoji: '🧘' }
+];
+
+let actionState = { actions: {} };
+let habitState = { habits: [], logs: {} };
+let currentActionMonth = new Date();
+let currentActionDate = new Date().toISOString().split('T')[0];
+let currentHabitPeriod = 'week';
+let currentHabitPeriodIndex = 0;
+let currentActionSubTab = 'list';
+
+function loadActionState() {
+  try {
+    const saved = localStorage.getItem(ACTION_STORAGE_KEY);
+    if (saved) {
+      actionState = JSON.parse(saved);
+      if (!actionState.actions) actionState.actions = {};
+    }
+  } catch(e) { console.error('Load action state error:', e); }
+}
+function saveActionState() {
+  try { localStorage.setItem(ACTION_STORAGE_KEY, JSON.stringify(actionState)); } catch(e) { console.error('Save action state error:', e); }
+}
+function loadHabitState() {
+  try {
+    const saved = localStorage.getItem(HABIT_STORAGE_KEY);
+    if (saved) {
+      habitState = JSON.parse(saved);
+      if (!habitState.habits) habitState.habits = [];
+      if (!habitState.logs) habitState.logs = {};
+    } else {
+      habitState = { habits: [...DEFAULT_HABITS], logs: {} };
+      saveHabitState();
+    }
+  } catch(e) { console.error('Load habit state error:', e); }
+}
+function saveHabitState() {
+  try { localStorage.setItem(HABIT_STORAGE_KEY, JSON.stringify(habitState)); } catch(e) { console.error('Save habit state error:', e); }
+}
+
+// ==================== 行动页面 - 主函数 ====================
+function setActionSubTab(tab, btn) {
+  currentActionSubTab = tab;
+  document.querySelectorAll('.action-sub-tab').forEach(t => t.classList.remove('active'));
+  btn.classList.add('active');
+  document.getElementById('actionListSection').style.display = tab === 'list' ? 'block' : 'none';
+  document.getElementById('actionHabitSection').style.display = tab === 'habit' ? 'block' : 'none';
+  if (tab === 'habit') renderHabitSection();
+}
+
+function renderActionPage() {
+  if (currentActionSubTab === 'list') {
+    renderActionCalendar();
+    renderActionList();
+  } else {
+    renderHabitSection();
+  }
+}
+
+function changeActionMonth(delta) {
+  currentActionMonth.setMonth(currentActionMonth.getMonth() + delta);
+  renderActionCalendar();
+}
+
+function renderActionCalendar() {
+  const grid = document.getElementById('actionCalendarGrid');
+  const label = document.getElementById('actionMonthLabel');
+  const now = new Date();
+  const fmt = (d) => `${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,'0')}-${String(d.getDate()).padStart(2,'0')}`;
+  const todayStr = fmt(now);
+  const y = currentActionMonth.getFullYear();
+  const m = currentActionMonth.getMonth();
+  
+  label.textContent = `${y}年${m+1}月`;
+  const firstDay = new Date(y, m, 1).getDay();
+  const daysInMonth = new Date(y, m+1, 0).getDate();
+  const startOffset = firstDay === 0 ? 6 : firstDay - 1;
+  
+  const headers = ['一','二','三','四','五','六','日'];
+  let html = headers.map(h => `<div class="action-cal-header">${h}</div>`).join('');
+  
+  for (let i = 0; i < startOffset; i++) html += '<div class="action-cal-cell empty"></div>';
+  
+  for (let d = 1; d <= daysInMonth; d++) {
+    const ds = `${y}-${String(m+1).padStart(2,'0')}-${String(d).padStart(2,'0')}`;
+    const dayActions = actionState.actions[ds] || [];
+    const hasPending = dayActions.some(a => !a.done);
+    const hasDone = dayActions.some(a => a.done);
+    const hasActions = dayActions.length > 0;
+    
+    let cls = 'action-cal-cell';
+    if (ds === todayStr) cls += ' today';
+    if (ds === currentActionDate) cls += ' selected';
+    
+    let dotHtml = '';
+    if (hasActions) {
+      const dotColor = hasPending ? 'blue' : 'green';
+      dotHtml = `<span class="cal-dot ${dotColor}"></span>`;
+    }
+    
+    html += `<div class="${cls}" onclick="selectActionDate('${ds}')"><div class="cal-date">${d}</div>${dotHtml}</div>`;
+  }
+  
+  grid.innerHTML = html;
+}
+
+function selectActionDate(ds) {
+  currentActionDate = ds;
+  renderActionCalendar();
+  renderActionList();
+}
+
+function renderActionList() {
+  const container = document.getElementById('actionItemsList');
+  const dateLabel = document.getElementById('actionListDate');
+  const countLabel = document.getElementById('actionListCount');
+  
+  const today = new Date().toISOString().split('T')[0];
+  const yesterday = new Date(); yesterday.setDate(yesterday.getDate() - 1);
+  const yesterdayStr = yesterday.toISOString().split('T')[0];
+  
+  if (currentActionDate === today) dateLabel.textContent = '今天';
+  else if (currentActionDate === yesterdayStr) dateLabel.textContent = '昨天';
+  else {
+    const d = new Date(currentActionDate);
+    dateLabel.textContent = `${d.getMonth()+1}月${d.getDate()}日`;
+  }
+  
+  const actions = actionState.actions[currentActionDate] || [];
+  countLabel.textContent = `${actions.length}条行动`;
+  
+  if (actions.length === 0) {
+    container.innerHTML = '<div class="action-empty">暂无行动，添加一条吧~</div>';
+    return;
+  }
+  
+  let html = '';
+  actions.forEach((action, idx) => {
+    const doneCls = action.done ? 'done' : '';
+    const checkedCls = action.done ? 'checked' : '';
+    html += `<div class="action-item ${doneCls}" data-idx="${idx}">
+      <div class="action-checkbox ${checkedCls}" onclick="toggleAction(${idx})">${action.done?'✓':''}</div>
+      <div class="action-text">${escapeHtml(action.text)}</div>
+      <div class="action-delete" onclick="deleteAction(${idx})">删除</div>
+    </div>`;
+  });
+  
+  container.innerHTML = html;
+  
+  // 添加滑动删除功能
+  container.querySelectorAll('.action-item').forEach(item => {
+    let startX = 0;
+    item.addEventListener('touchstart', e => { startX = e.touches[0].clientX; }, { passive: true });
+    item.addEventListener('touchend', e => {
+      const diff = e.changedTouches[0].clientX - startX;
+      if (diff < -50) item.classList.add('show-delete');
+      else if (diff > 50) item.classList.remove('show-delete');
+    });
+    item.addEventListener('click', e => {
+      if (!item.classList.contains('show-delete')) return;
+      if (e.target.classList.contains('action-delete')) return;
+      item.classList.remove('show-delete');
+    });
+  });
+}
+
+function addAction() {
+  const input = document.getElementById('actionInput');
+  const text = input.value.trim();
+  if (!text) return;
+  
+  if (!actionState.actions[currentActionDate]) {
+    actionState.actions[currentActionDate] = [];
+  }
+  
+  actionState.actions[currentActionDate].push({
+    id: 'act_' + Date.now(),
+    text: text,
+    done: false,
+    createdAt: Date.now()
+  });
+  
+  saveActionState();
+  input.value = '';
+  renderActionCalendar();
+  renderActionList();
+}
+
+function toggleAction(idx) {
+  const actions = actionState.actions[currentActionDate];
+  if (!actions || !actions[idx]) return;
+  actions[idx].done = !actions[idx].done;
+  if (actions[idx].done && !actions[idx].doneAt) {
+    actions[idx].doneAt = Date.now();
+  }
+  saveActionState();
+  renderActionCalendar();
+  renderActionList();
+}
+
+function deleteAction(idx) {
+  const actions = actionState.actions[currentActionDate];
+  if (!actions) return;
+  actions.splice(idx, 1);
+  if (actions.length === 0) delete actionState.actions[currentActionDate];
+  saveActionState();
+  renderActionCalendar();
+  renderActionList();
+}
+
+function escapeHtml(str) {
+  const div = document.createElement('div');
+  div.textContent = str;
+  return div.innerHTML;
+}
+
+// ==================== 习惯打卡功能 ====================
+function getHabitPeriodRange() {
+  const now = new Date();
+  const fmt = (d) => `${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,'0')}-${String(d.getDate()).padStart(2,'0')}`;
+  
+  if (currentHabitPeriod === 'week') {
+    const dow = now.getDay() || 7;
+    const mon = new Date(now); mon.setDate(now.getDate() - dow + 1 - currentHabitPeriodIndex * 7);
+    const sun = new Date(mon); sun.setDate(mon.getDate() + 6);
+    return { start: fmt(mon), end: fmt(sun), label: `${mon.getMonth()+1}/${mon.getDate()}-${sun.getMonth()+1}/${sun.getDate()}` };
+  } else if (currentHabitPeriod === 'month') {
+    const start = new Date(now.getFullYear(), now.getMonth() - currentHabitPeriodIndex, 1);
+    const end = new Date(now.getFullYear(), now.getMonth() - currentHabitPeriodIndex + 1, 0);
+    return { start: fmt(start), end: fmt(end), label: `${start.getFullYear()}年${start.getMonth()+1}月` };
+  } else {
+    const year = now.getFullYear() - currentHabitPeriodIndex;
+    return { start: `${year}-01-01`, end: `${year}-12-31`, label: `${year}年` };
+  }
+}
+
+function changeHabitPeriod(delta) {
+  if (currentHabitPeriod === 'week') {
+    currentHabitPeriodIndex += delta;
+  } else if (currentHabitPeriod === 'month') {
+    currentHabitPeriodIndex += delta;
+  } else {
+    currentHabitPeriodIndex += delta;
+  }
+  renderHabitSection();
+}
+
+function renderHabitSection() {
+  loadHabitState();
+  const period = getHabitPeriodRange();
+  document.getElementById('habitPeriodLabel').textContent = period.label;
+  
+  // 渲染统计卡片
+  renderHabitStats();
+  // 渲染习惯标签
+  renderHabitTags();
+}
+
+function renderHabitStats() {
+  const container = document.getElementById('habitStatsCards');
+  const period = getHabitPeriodRange();
+  const totalDays = getDaysInPeriod(period.start, period.end);
+  
+  let html = '';
+  habitState.habits.forEach(habit => {
+    const logs = getHabitLogsInPeriod(habit.id, period.start, period.end);
+    const totalCount = logs.reduce((s, l) => s + (l.count || 1), 0);
+    const pct = totalDays > 0 ? Math.min((logs.length / totalDays) * 100, 100) : 0;
+    
+    html += `<div class="habit-stats-card" onclick="toggleHabitCheck('${habit.id}')">
+      <div class="habit-stats-left">
+        <span class="habit-stats-emoji">${habit.emoji}</span>
+        <div class="habit-stats-info">
+          <div class="habit-stats-name">${escapeHtml(habit.name)}</div>
+          <div class="habit-stats-count">${period.label} · ${logs.length}/${totalDays}天</div>
+        </div>
+      </div>
+      <div class="habit-stats-value">${totalCount}次</div>
+    </div>`;
+  });
+  
+  container.innerHTML = html;
+}
+
+function renderHabitTags() {
+  const container = document.getElementById('habitTagsList');
+  const today = new Date().toISOString().split('T')[0];
+  const todayLogs = habitState.logs[today] || [];
+  
+  let html = '';
+  habitState.habits.forEach(habit => {
+    const log = todayLogs.find(l => l.habitId === habit.id);
+    const isChecked = !!log;
+    const checkedCls = isChecked ? 'checked' : '';
+    
+    html += `<div class="habit-card ${checkedCls}" onclick="showHabitNotePopup('${habit.id}')">
+      <span class="habit-emoji">${habit.emoji}</span>
+      <div class="habit-info">
+        <div class="habit-name">${escapeHtml(habit.name)}</div>
+        <div class="habit-count">${isChecked ? '已打卡 ' + (log.count > 1 ? log.count + '次' : '') : '点击打卡'}</div>
+        <div class="habit-progress-bg"><div class="habit-progress-fill" style="width:${getHabitPeriodProgress(habit.id)}%"></div></div>
+      </div>
+      <button class="habit-check-btn ${checkedCls}" onclick="event.stopPropagation();toggleHabitCheck('${habit.id}')">${isChecked?'✓':'○'}</button>
+    </div>`;
+  });
+  
+  container.innerHTML = html;
+}
+
+function getDaysInPeriod(start, end) {
+  const s = new Date(start);
+  const e = new Date(end);
+  return Math.ceil((e - s) / (1000 * 60 * 60 * 24)) + 1;
+}
+
+function getHabitLogsInPeriod(habitId, start, end) {
+  const logs = [];
+  for (const [date, dayLogs] of Object.entries(habitState.logs)) {
+    if (date >= start && date <= end) {
+      const log = dayLogs.find(l => l.habitId === habitId);
+      if (log) logs.push(log);
+    }
+  }
+  return logs;
+}
+
+function getHabitPeriodProgress(habitId) {
+  const period = getHabitPeriodRange();
+  const totalDays = getDaysInPeriod(period.start, period.end);
+  const logs = getHabitLogsInPeriod(habitId, period.start, period.end);
+  return totalDays > 0 ? Math.min((logs.length / totalDays) * 100, 100) : 0;
+}
+
+function toggleHabitCheck(habitId) {
+  const today = new Date().toISOString().split('T')[0];
+  if (!habitState.logs[today]) habitState.logs[today] = [];
+  
+  const idx = habitState.logs[today].findIndex(l => l.habitId === habitId);
+  if (idx >= 0) {
+    habitState.logs[today].splice(idx, 1);
+  } else {
+    habitState.logs[today].push({ habitId, count: 1, note: '', checkedAt: Date.now() });
+  }
+  
+  saveHabitState();
+  renderHabitStats();
+  renderHabitTags();
+}
+
+let currentHabitNoteHabitId = null;
+
+function showHabitNotePopup(habitId) {
+  currentHabitNoteHabitId = habitId;
+  const popup = document.getElementById('habitNotePopup');
+  const habit = habitState.habits.find(h => h.id === habitId);
+  const today = new Date().toISOString().split('T')[0];
+  const existingLog = (habitState.logs[today] || []).find(l => l.habitId === habitId);
+  
+  document.getElementById('habitNoteTitle').textContent = `${habit ? habit.emoji : ''} ${habit ? habit.name : ''}打卡`;
+  document.getElementById('habitNoteInput').value = existingLog && existingLog.note ? existingLog.note : '';
+  document.getElementById('habitNoteInput').placeholder = '选填，如"3章"、"1小时"';
+  
+  popup.classList.add('show');
+  setTimeout(() => document.getElementById('habitNoteInput').focus(), 100);
+}
+
+function confirmHabitNote() {
+  const note = document.getElementById('habitNoteInput').value.trim();
+  const today = new Date().toISOString().split('T')[0];
+  
+  if (!habitState.logs[today]) habitState.logs[today] = [];
+  
+  const existingIdx = habitState.logs[today].findIndex(l => l.habitId === currentHabitNoteHabitId);
+  if (existingIdx >= 0) {
+    habitState.logs[today][existingIdx].note = note;
+    habitState.logs[today][existingIdx].count = 1;
+  } else {
+    habitState.logs[today].push({ habitId: currentHabitNoteHabitId, count: 1, note: note, checkedAt: Date.now() });
+  }
+  
+  saveHabitState();
+  closeHabitNotePopup();
+  renderHabitStats();
+  renderHabitTags();
+}
+
+function closeHabitNotePopup() {
+  document.getElementById('habitNotePopup').classList.remove('show');
+  currentHabitNoteHabitId = null;
+}
+
+function showAddHabitModal() {
+  const emojis = ['🏃','🚴','🧘','💪','🏊','⚽','🏀','🎾','🏋️','🤸','⛹️','🧗','🏄','🏂','🎣','🚣','🏇','🧗‍♀️','💃','🎸','🎨','🎭','🎬','✍️','📖','📚','💻','🎯','🧠','🌟','🌱','💧','🍎','🥗','😴','💤','🌞','🌙'];
+  let selectedEmoji = '✨';
+  
+  document.getElementById('modalTitle').textContent = '添加习惯';
+  document.getElementById('modalBody').innerHTML = `
+    <div class="field-group">
+      <label>选择图标</label>
+      <div style="font-size:32px;margin-bottom:8px;text-align:center" id="newHabitEmojiDisplay">${selectedEmoji}</div>
+      <div class="emoji-grid">${emojis.map(e => `<button class="emoji-option ${e===selectedEmoji?'selected':''}" onclick="this.parentElement.querySelectorAll('.emoji-option').forEach(b=>b.classList.remove('selected'));this.classList.add('selected');document.getElementById('newHabitEmojiDisplay').textContent='${e}';window._newHabitEmoji='${e}'">${e}</button>`).join('')}</div>
+    </div>
+    <div class="field-group">
+      <label>习惯名称</label>
+      <input class="modal-input" id="newHabitName" placeholder="如：晨跑、记单词">
+    </div>
+    <button class="modal-btn primary" onclick="doAddHabit()">确定添加</button>
+    <button class="modal-btn secondary" onclick="closeModalDirect()">取消</button>
+  `;
+  window._newHabitEmoji = selectedEmoji;
+  document.getElementById('modalOverlay').classList.add('show');
+}
+
+function doAddHabit() {
+  const name = document.getElementById('newHabitName').value.trim();
+  const emoji = window._newHabitEmoji || '✨';
+  
+  if (!name) {
+    showToast('请输入习惯名称');
+    return;
+  }
+  
+  habitState.habits.push({ id: 'habit_' + Date.now(), name, emoji });
+  saveHabitState();
+  closeModalDirect();
+  renderHabitStats();
+  renderHabitTags();
+  showToast('习惯已添加');
+}
+
+function setHabitPeriod(period) {
+  currentHabitPeriod = period;
+  currentHabitPeriodIndex = 0;
+  document.querySelectorAll('.period-tab').forEach(t => {
+    if (t.textContent === (period === 'week' ? '周' : period === 'month' ? '月' : '年')) {
+      t.classList.add('active');
+    } else {
+      t.classList.remove('active');
+    }
+  });
+  renderHabitSection();
+}
+
 </script>
 </body>
 </html>
