@@ -513,6 +513,10 @@ body { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', 'PingFang SC'
 .action-cal-cell.empty:hover { background: transparent; }
 .action-cal-cell .cal-date { font-size: 12px; color: var(--text-secondary); margin-bottom: 2px; line-height: 1; }
 .action-cal-cell .cal-dot { width: 6px; height: 6px; border-radius: 50%; }
+.action-cal-cell .cal-preview { font-size: 8px; color: var(--text-tertiary); line-height: 1.1; max-width: 100%; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; margin-top: 1px; }
+.action-cal-cell .cal-more { font-size: 7px; color: var(--primary); }
+.action-cal-cell.selected .cal-preview { color: rgba(255,255,255,0.8); }
+.action-cal-cell.selected .cal-more { color: rgba(255,255,255,0.9); }
 .action-cal-cell.today { border: 2px solid var(--primary); }
 .action-cal-cell.today .cal-date { color: var(--primary); font-weight: 700; }
 .action-cal-cell.selected { background: var(--primary); }
@@ -527,6 +531,8 @@ body { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', 'PingFang SC'
 .action-checkbox { width: 22px; height: 22px; border-radius: 50%; border: 2px solid var(--border); cursor: pointer; display: flex; align-items: center; justify-content: center; flex-shrink: 0; transition: all 0.2s; }
 .action-checkbox.checked { background: var(--income); border-color: var(--income); color: #fff; font-size: 12px; }
 .action-text { flex: 1; font-size: 14px; }
+.action-del-btn { width: 24px; height: 24px; border-radius: 50%; background: var(--bg-input); color: var(--text-tertiary); font-size: 12px; display: flex; align-items: center; justify-content: center; cursor: pointer; flex-shrink: 0; transition: all 0.15s; border: none; font-family: inherit; }
+.action-del-btn:active { background: var(--expense); color: #fff; }
 .action-delete { position: absolute; right: -50px; top: 0; bottom: 0; width: 50px; background: var(--expense); color: #fff; display: flex; align-items: center; justify-content: center; transition: right 0.3s; cursor: pointer; font-size: 13px; }
 .action-item.show-delete .action-delete { right: 0; }
 .action-input-row { display: flex; gap: 10px; margin-top: 12px; }
@@ -1980,7 +1986,14 @@ function renderActionCalendar() {
       dotHtml = `<span class="cal-dot ${dotColor}"></span>`;
     }
     
-    html += `<div class="${cls}" onclick="selectActionDate('${ds}')"><div class="cal-date">${d}</div>${dotHtml}</div>`;
+    const preview = dayActions.slice(0, 2).map(a => a.text.length > 4 ? a.text.slice(0,4)+'..' : a.text).join(' ');
+    const moreCount = dayActions.length > 2 ? '+' + (dayActions.length - 2) : '';
+    let previewHtml = '';
+    if (hasActions) {
+      previewHtml = `<div class="cal-preview">${preview}</div>`;
+      if (moreCount) previewHtml += `<div class="cal-more">${moreCount}</div>`;
+    }
+    html += `<div class="${cls}" onclick="selectActionDate('${ds}')"><div class="cal-date">${d}</div>${dotHtml}${previewHtml}</div>`;
   }
   
   grid.innerHTML = html;
@@ -2023,6 +2036,7 @@ function renderActionList() {
     html += `<div class="action-item ${doneCls}" data-idx="${idx}">
       <div class="action-checkbox ${checkedCls}" onclick="toggleAction(${idx})">${action.done?'✓':''}</div>
       <div class="action-text">${escapeHtml(action.text)}</div>
+      <div class="action-del-btn" onclick="event.stopPropagation();deleteAction(${idx})">✕</div>
       <div class="action-delete" onclick="deleteAction(${idx})">删除</div>
     </div>`;
   });
