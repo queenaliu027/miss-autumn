@@ -2117,15 +2117,15 @@ function getHabitPeriodRange() {
   
   if (currentHabitPeriod === 'week') {
     const dow = now.getDay() || 7;
-    const mon = new Date(now); mon.setDate(now.getDate() - dow + 1 - currentHabitPeriodIndex * 7);
+    const mon = new Date(now); mon.setDate(now.getDate() - dow + 1 + currentHabitPeriodIndex * 7);
     const sun = new Date(mon); sun.setDate(mon.getDate() + 6);
     return { start: fmt(mon), end: fmt(sun), label: `${mon.getMonth()+1}/${mon.getDate()}-${sun.getMonth()+1}/${sun.getDate()}` };
   } else if (currentHabitPeriod === 'month') {
-    const start = new Date(now.getFullYear(), now.getMonth() - currentHabitPeriodIndex, 1);
-    const end = new Date(now.getFullYear(), now.getMonth() - currentHabitPeriodIndex + 1, 0);
+    const start = new Date(now.getFullYear(), now.getMonth() + currentHabitPeriodIndex, 1);
+    const end = new Date(now.getFullYear(), now.getMonth() + currentHabitPeriodIndex + 1, 0);
     return { start: fmt(start), end: fmt(end), label: `${start.getFullYear()}年${start.getMonth()+1}月` };
   } else {
-    const year = now.getFullYear() - currentHabitPeriodIndex;
+    const year = now.getFullYear() + currentHabitPeriodIndex;
     return { start: `${year}-01-01`, end: `${year}-12-31`, label: `${year}年` };
   }
 }
