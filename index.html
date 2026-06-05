@@ -575,6 +575,48 @@ body { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', 'PingFang SC'
 .habit-count-input-btns .confirm { background: var(--primary); color: #fff; }
 .habit-count-input-btns .cancel { background: var(--bg-input); color: var(--text-secondary); }
 .habit-note-popup { position: fixed; top: 50%; left: 50%; transform: translate(-50%, -50%); background: var(--bg-card); border-radius: var(--radius); padding: 20px; width: 280px; box-shadow: var(--shadow-lg); z-index: 1001; display: none; }
+.body-track-section { padding: 0 4px; }
+.body-track-input-row { display: flex; gap: 8px; margin-bottom: 12px; }
+.body-track-input-row input { flex: 1; padding: 10px 12px; background: var(--bg-input); border: 2px solid transparent; border-radius: var(--radius-sm); color: var(--text); font-size: 14px; outline: none; font-family: inherit; }
+.body-track-input-row input:focus { border-color: var(--primary); }
+.body-track-input-row input::placeholder { color: var(--text-tertiary); }
+.body-track-input-row button { padding: 10px 18px; background: var(--primary); color: #fff; border: none; border-radius: var(--radius-sm); font-size: 14px; cursor: pointer; font-family: inherit; white-space: nowrap; }
+.body-track-input-row button:active { transform: scale(0.97); }
+.body-weight-summary { background: var(--bg-card); border-radius: var(--radius); padding: 16px; margin-bottom: 12px; box-shadow: var(--shadow); display: flex; align-items: center; justify-content: space-around; }
+.body-weight-item { text-align: center; }
+.body-weight-item .bw-label { font-size: 11px; color: var(--text-secondary); margin-bottom: 4px; }
+.body-weight-item .bw-value { font-size: 20px; font-weight: 700; color: var(--primary); }
+.body-weight-item .bw-value.small { font-size: 16px; }
+.body-weight-item .bw-unit { font-size: 11px; color: var(--text-tertiary); }
+.body-weight-trend { background: var(--bg-card); border-radius: var(--radius); padding: 14px; margin-bottom: 12px; box-shadow: var(--shadow); }
+.body-weight-trend canvas { width: 100% !important; height: 160px !important; }
+.body-dim-section-title { font-size: 13px; font-weight: 600; color: var(--text-secondary); margin: 14px 0 8px; padding-left: 4px; }
+.body-dim-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; margin-bottom: 12px; }
+.body-dim-card { background: var(--bg-card); border-radius: var(--radius-sm); padding: 12px; box-shadow: var(--shadow); display: flex; align-items: center; gap: 10px; }
+.body-dim-card .bd-emoji { font-size: 24px; }
+.body-dim-card .bd-info { flex: 1; }
+.body-dim-card .bd-name { font-size: 12px; color: var(--text-secondary); }
+.body-dim-card .bd-value { font-size: 16px; font-weight: 600; color: var(--text); }
+.body-dim-card .bd-change { font-size: 11px; }
+.body-dim-card .bd-change.down { color: var(--income); }
+.body-dim-card .bd-change.up { color: var(--expense); }
+.body-dim-card .bd-edit { width: 28px; height: 28px; border-radius: 50%; border: 1.5px solid var(--border); background: var(--bg-input); color: var(--text-secondary); font-size: 14px; cursor: pointer; display: flex; align-items: center; justify-content: center; }
+.body-history-list { background: var(--bg-card); border-radius: var(--radius); box-shadow: var(--shadow); overflow: hidden; }
+.body-history-item { padding: 12px 16px; border-bottom: 1px solid var(--border); display: flex; align-items: center; justify-content: space-between; }
+.body-history-item:last-child { border-bottom: none; }
+.body-history-date { font-size: 12px; color: var(--text-secondary); }
+.body-history-weight { font-size: 15px; font-weight: 600; color: var(--primary); }
+.body-history-dims { font-size: 11px; color: var(--text-tertiary); }
+.body-history-del { color: var(--expense); font-size: 12px; cursor: pointer; padding: 4px 8px; border-radius: 6px; }
+.body-history-del:active { background: rgba(255,0,0,0.05); }
+.body-dim-popup { position: fixed; top: 50%; left: 50%; transform: translate(-50%, -50%); background: var(--bg-card); border-radius: var(--radius); padding: 20px; width: 300px; box-shadow: var(--shadow-lg); z-index: 1001; display: none; }
+.body-dim-popup.show { display: block; }
+.body-dim-popup h3 { font-size: 15px; margin-bottom: 12px; text-align: center; }
+.body-dim-popup input { width: 100%; padding: 10px 12px; background: var(--bg-input); border: 2px solid transparent; border-radius: var(--radius-sm); color: var(--text); font-size: 14px; outline: none; font-family: inherit; margin-bottom: 10px; }
+.body-dim-popup input:focus { border-color: var(--primary); }
+.body-dim-popup-btns { display: flex; gap: 8px; }
+.body-dim-popup-btns button { flex: 1; padding: 10px; border: none; border-radius: 8px; font-size: 14px; cursor: pointer; font-family: inherit; }
+
 .habit-note-popup.show { display: block; }
 .habit-note-popup-title { font-size: 15px; font-weight: 600; margin-bottom: 12px; text-align: center; }
 .habit-note-popup input { width: 100%; padding: 10px 12px; background: var(--bg-input); border: 2px solid transparent; border-radius: var(--radius-sm); color: var(--text); font-size: 14px; outline: none; font-family: inherit; margin-bottom: 12px; }
@@ -730,6 +772,7 @@ body { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', 'PingFang SC'
       <div class="action-sub-tabs">
         <button class="action-sub-tab active" id="actionListTabBtn" onclick="setActionSubTab('list',this)">📋 行动清单</button>
         <button class="action-sub-tab" id="actionHabitTabBtn" onclick="setActionSubTab('habit',this)">📊 习惯打卡</button>
+        <button class="action-sub-tab" id="actionBodyTabBtn" onclick="setActionSubTab('body',this)">⚖️ 体重</button>
       </div>
       <div id="actionListSection">
         <div class="action-cal-nav">
@@ -764,6 +807,21 @@ body { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', 'PingFang SC'
         <div class="section-title">🏷️ 习惯标签</div>
         <div id="habitTagsList"></div>
         <div class="add-habit-btn" onclick="showAddHabitModal()">+ 添加自定义习惯</div>
+      </div>
+      <div id="actionBodySection" style="display:none">
+        <div class="body-track-section">
+          <div class="body-weight-summary" id="bodyWeightSummary"></div>
+          <div class="body-weight-trend"><canvas id="bodyWeightChart"></canvas></div>
+          <div class="body-track-input-row">
+            <input type="date" id="bodyWeightDate">
+            <input type="number" id="bodyWeightInput" placeholder="体重(kg)" step="0.1" inputmode="decimal">
+            <button onclick="saveBodyWeight()">记录</button>
+          </div>
+          <div class="body-dim-section-title">📏 身体维度</div>
+          <div class="body-dim-grid" id="bodyDimGrid"></div>
+          <div class="body-dim-section-title">📋 历史记录</div>
+          <div class="body-history-list" id="bodyHistoryList"></div>
+        </div>
       </div>
     </div>
     <div class="page" id="page-settings">
@@ -840,6 +898,15 @@ body { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', 'PingFang SC'
 </div>
 <div class="modal-overlay" id="modalOverlay" onclick="closeModal(event)"><div class="modal" id="modalContent" onclick="event.stopPropagation()"><div class="modal-title" id="modalTitle"></div><div id="modalBody"></div></div></div>
 <div class="toast" id="toast"></div>
+<div class="body-dim-popup" id="bodyDimPopup">
+  <h3 id="bodyDimPopupTitle">记录维度</h3>
+  <input type="date" id="bodyDimDate">
+  <input type="number" id="bodyDimValue" placeholder="cm" step="0.1" inputmode="decimal">
+  <div class="body-dim-popup-btns">
+    <button style="background:var(--bg-input);color:var(--text-secondary)" onclick="closeBodyDimPopup()">取消</button>
+    <button style="background:var(--primary);color:#fff" onclick="confirmBodyDim()">保存</button>
+  </div>
+</div>
 <div class="habit-note-popup" id="habitNotePopup">
   <div class="habit-note-popup-title" id="habitNoteTitle">打卡</div>
   <input type="text" id="habitNoteInput" placeholder="选填，如"3章"、"1小时"">
@@ -1875,7 +1942,7 @@ function initGlacierSnow() {
   }
 }
 function initThemeDecorations() { initSakuraPetals(); initMatchaLeaves(); initLavenderStars(); initCatPaws(); initGlacierSnow(); }
-function init() { loadState(); loadActionState(); loadHabitState(); setTheme(state.theme); initThemeDecorations(); document.getElementById('recordInput').addEventListener('input', handleInputChange); document.getElementById('expenseEnvelopeSelect').addEventListener('change', updateInvestAccountField); document.getElementById('expenseCategorySelect').addEventListener('change', onCategoryChange); renderOverview(); }
+function init() { loadState(); loadActionState(); loadHabitState(); loadBodyState(); setTheme(state.theme); initThemeDecorations(); document.getElementById('recordInput').addEventListener('input', handleInputChange); document.getElementById('expenseEnvelopeSelect').addEventListener('change', updateInvestAccountField); document.getElementById('expenseCategorySelect').addEventListener('change', onCategoryChange); renderOverview(); }
 document.addEventListener('DOMContentLoaded', init);
 
 // ==================== 行动页面 - 数据存储 ====================
@@ -1925,6 +1992,206 @@ function loadHabitState() {
 function saveHabitState() {
   try { localStorage.setItem(HABIT_STORAGE_KEY, JSON.stringify(habitState)); } catch(e) { console.error('Save habit state error:', e); }
 }
+// ==================== 体重管理 ====================
+const BODY_STORAGE_KEY = 'zhizhang_body';
+const BODY_DIMS = [
+  { id: 'chest', name: '胸围', emoji: '📏' },
+  { id: 'waist', name: '腰围', emoji: '裤腰' },
+  { id: 'hip', name: '臀围', emoji: '🍑' },
+  { id: 'thigh', name: '大腿围', emoji: '🦵' },
+  { id: 'arm', name: '手臂围', emoji: '💪' },
+  { id: 'calf', name: '小腿围', emoji: '🦶' }
+];
+let bodyState = { weights: {}, dims: {} };
+let bodyWeightChart = null;
+let editingDimId = null;
+
+function loadBodyState() {
+  try {
+    const saved = localStorage.getItem(BODY_STORAGE_KEY);
+    if (saved) {
+      bodyState = JSON.parse(saved);
+      if (!bodyState.weights) bodyState.weights = {};
+      if (!bodyState.dims) bodyState.dims = {};
+    }
+  } catch(e) { console.error('Load body state error:', e); }
+}
+function saveBodyState() {
+  try { localStorage.setItem(BODY_STORAGE_KEY, JSON.stringify(bodyState)); } catch(e) { console.error('Save body state error:', e); }
+}
+
+function saveBodyWeight() {
+  const dateEl = document.getElementById('bodyWeightDate');
+  const weightEl = document.getElementById('bodyWeightInput');
+  const date = dateEl.value;
+  const weight = parseFloat(weightEl.value);
+  if (!date) { showToast('请选择日期'); return; }
+  if (!weight || weight <= 0) { showToast('请输入有效体重'); return; }
+  bodyState.weights[date] = weight;
+  saveBodyState();
+  weightEl.value = '';
+  showToast('体重已记录：' + weight + 'kg');
+  renderBodySection();
+}
+
+function deleteBodyWeight(date) {
+  delete bodyState.weights[date];
+  saveBodyState();
+  renderBodySection();
+}
+
+function renderBodySection() {
+  const today = new Date().toISOString().split('T')[0];
+  document.getElementById('bodyWeightDate').value = today;
+  renderBodySummary();
+  renderBodyWeightChart();
+  renderBodyDimGrid();
+  renderBodyHistory();
+}
+
+function renderBodySummary() {
+  const container = document.getElementById('bodyWeightSummary');
+  const dates = Object.keys(bodyState.weights).sort();
+  if (dates.length === 0) {
+    container.innerHTML = '<div style="text-align:center;color:var(--text-tertiary);padding:8px;font-size:13px">暂无体重记录，开始记录吧</div>';
+    return;
+  }
+  const latest = bodyState.weights[dates[dates.length - 1]];
+  const prev = dates.length >= 2 ? bodyState.weights[dates[dates.length - 2]] : null;
+  const change = prev !== null ? (latest - prev).toFixed(1) : null;
+  const allWeights = Object.values(bodyState.weights);
+  const minW = Math.min(...allWeights);
+  const maxW = Math.max(...allWeights);
+  let html = '<div class="body-weight-item"><div class="bw-label">最新体重</div><div class="bw-value">' + latest.toFixed(1) + '<span class="bw-unit">kg</span></div>';
+  if (change !== null) {
+    const c = parseFloat(change);
+    html += '<div class="bd-change ' + (c < 0 ? 'down' : c > 0 ? 'up' : '') + '">' + (c > 0 ? '+' : '') + change + 'kg</div>';
+  }
+  html += '</div>';
+  html += '<div class="body-weight-item"><div class="bw-label">最低</div><div class="bw-value small">' + minW.toFixed(1) + '<span class="bw-unit">kg</span></div></div>';
+  html += '<div class="body-weight-item"><div class="bw-label">最高</div><div class="bw-value small">' + maxW.toFixed(1) + '<span class="bw-unit">kg</span></div></div>';
+  container.innerHTML = html;
+}
+
+function renderBodyWeightChart() {
+  const dates = Object.keys(bodyState.weights).sort();
+  if (dates.length < 2) {
+    document.getElementById('bodyWeightChart').style.display = 'none';
+    return;
+  }
+  document.getElementById('bodyWeightChart').style.display = 'block';
+  const labels = dates.map(d => d.slice(5));
+  const data = dates.map(d => bodyState.weights[d]);
+  const ctx = document.getElementById('bodyWeightChart').getContext('2d');
+  if (bodyWeightChart) bodyWeightChart.destroy();
+  const tc = getComputedStyle(document.documentElement);
+  bodyWeightChart = new Chart(ctx, {
+    type: 'line',
+    data: {
+      labels: labels,
+      datasets: [{
+        label: '体重(kg)',
+        data: data,
+        borderColor: '#6c5ce7',
+        backgroundColor: 'rgba(108,92,231,0.12)',
+        fill: true,
+        tension: 0.3,
+        pointRadius: 3,
+        pointBackgroundColor: '#6c5ce7',
+        borderWidth: 2
+      }]
+    },
+    options: {
+      responsive: true,
+      maintainAspectRatio: false,
+      plugins: { legend: { display: false } },
+      scales: {
+        x: { ticks: { font: { size: 10 }, color: tc.getPropertyValue('--text-tertiary').trim() }, grid: { display: false } },
+        y: { ticks: { font: { size: 10 }, color: tc.getPropertyValue('--text-tertiary').trim() }, grid: { color: tc.getPropertyValue('--border').trim() } }
+      }
+    }
+  });
+}
+
+function renderBodyDimGrid() {
+  const container = document.getElementById('bodyDimGrid');
+  const today = new Date().toISOString().split('T')[0];
+  let html = '';
+  BODY_DIMS.forEach(dim => {
+    const dimLogs = bodyState.dims[dim.id] || {};
+    const dates = Object.keys(dimLogs).sort();
+    const latest = dates.length > 0 ? dimLogs[dates[dates.length - 1]] : null;
+    const prev = dates.length >= 2 ? dimLogs[dates[dates.length - 2]] : null;
+    const change = (latest !== null && prev !== null) ? (latest - prev).toFixed(1) : null;
+    html += '<div class="body-dim-card" onclick="showBodyDimPopup(\'' + dim.id + '\')">';
+    html += '<div class="bd-emoji">' + dim.emoji + '</div>';
+    html += '<div class="bd-info"><div class="bd-name">' + dim.name + '</div>';
+    html += '<div class="bd-value">' + (latest !== null ? latest.toFixed(1) + 'cm' : '--') + '</div>';
+    if (change !== null) {
+      const c = parseFloat(change);
+      html += '<div class="bd-change ' + (c < 0 ? 'down' : c > 0 ? 'up' : '') + '">' + (c > 0 ? '+' : '') + change + 'cm</div>';
+    }
+    html += '</div>';
+    html += '<div class="bd-edit">✏️</div>';
+    html += '</div>';
+  });
+  container.innerHTML = html;
+}
+
+function showBodyDimPopup(dimId) {
+  editingDimId = dimId;
+  const dim = BODY_DIMS.find(d => d.id === dimId);
+  document.getElementById('bodyDimPopupTitle').textContent = '记录' + dim.name;
+  document.getElementById('bodyDimDate').value = new Date().toISOString().split('T')[0];
+  document.getElementById('bodyDimValue').value = '';
+  document.getElementById('bodyDimPopup').classList.add('show');
+  document.getElementById('bodyDimOverlay') && document.getElementById('bodyDimOverlay').classList.add('show');
+}
+function closeBodyDimPopup() {
+  document.getElementById('bodyDimPopup').classList.remove('show');
+  editingDimId = null;
+}
+function confirmBodyDim() {
+  if (!editingDimId) return;
+  const date = document.getElementById('bodyDimDate').value;
+  const val = parseFloat(document.getElementById('bodyDimValue').value);
+  if (!date) { showToast('请选择日期'); return; }
+  if (!val || val <= 0) { showToast('请输入有效数值'); return; }
+  if (!bodyState.dims[editingDimId]) bodyState.dims[editingDimId] = {};
+  bodyState.dims[editingDimId][date] = val;
+  saveBodyState();
+  showToast('维度已记录');
+  closeBodyDimPopup();
+  renderBodySection();
+}
+
+function renderBodyHistory() {
+  const container = document.getElementById('bodyHistoryList');
+  const dates = Object.keys(bodyState.weights).sort().reverse().slice(0, 20);
+  if (dates.length === 0) {
+    container.innerHTML = '<div style="text-align:center;color:var(--text-tertiary);padding:16px;font-size:13px">暂无记录</div>';
+    return;
+  }
+  let html = '';
+  dates.forEach(date => {
+    const w = bodyState.weights[date];
+    const dimParts = [];
+    BODY_DIMS.forEach(dim => {
+      const dimLogs = bodyState.dims[dim.id] || {};
+      if (dimLogs[date]) dimParts.push(dim.name + ':' + dimLogs[date].toFixed(1));
+    });
+    html += '<div class="body-history-item">';
+    html += '<div><div class="body-history-date">' + date + '</div>';
+    if (dimParts.length) html += '<div class="body-history-dims">' + dimParts.join(' · ') + '</div>';
+    html += '</div>';
+    html += '<div style="display:flex;align-items:center;gap:12px">';
+    html += '<span class="body-history-weight">' + w.toFixed(1) + 'kg</span>';
+    html += '<span class="body-history-del" onclick="deleteBodyWeight(\'' + date + '\')">删除</span>';
+    html += '</div></div>';
+  });
+  container.innerHTML = html;
+}
+
 
 // ==================== 行动页面 - 主函数 ====================
 function setActionSubTab(tab, btn) {
@@ -1933,15 +2200,19 @@ function setActionSubTab(tab, btn) {
   btn.classList.add('active');
   document.getElementById('actionListSection').style.display = tab === 'list' ? 'block' : 'none';
   document.getElementById('actionHabitSection').style.display = tab === 'habit' ? 'block' : 'none';
+  document.getElementById('actionBodySection').style.display = tab === 'body' ? 'block' : 'none';
   if (tab === 'habit') renderHabitSection();
+  if (tab === 'body') renderBodySection();
 }
 
 function renderActionPage() {
   if (currentActionSubTab === 'list') {
     renderActionCalendar();
     renderActionList();
-  } else {
+  } else if (currentActionSubTab === 'habit') {
     renderHabitSection();
+  } else {
+    renderBodySection();
   }
 }
 
