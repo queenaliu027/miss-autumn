@@ -616,6 +616,36 @@ body { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', 'PingFang SC'
 .body-dim-popup input:focus { border-color: var(--primary); }
 .body-dim-popup-btns { display: flex; gap: 8px; }
 .body-dim-popup-btns button { flex: 1; padding: 10px; border: none; border-radius: 8px; font-size: 14px; cursor: pointer; font-family: inherit; }
+.diet-section { padding: 0 4px; }
+.diet-day-summary { background: var(--bg-card); border-radius: var(--radius); padding: 14px 16px; margin-bottom: 12px; box-shadow: var(--shadow); display: flex; align-items: center; justify-content: space-around; }
+.diet-day-item { text-align: center; }
+.diet-day-item .dd-label { font-size: 11px; color: var(--text-secondary); margin-bottom: 2px; }
+.diet-day-item .dd-value { font-size: 18px; font-weight: 700; color: var(--primary); }
+.diet-day-item .dd-unit { font-size: 11px; color: var(--text-tertiary); }
+.diet-add-card { background: var(--bg-card); border-radius: var(--radius-sm); padding: 14px; margin-bottom: 12px; box-shadow: var(--shadow); }
+.diet-add-row { display: flex; gap: 8px; margin-bottom: 10px; align-items: center; }
+.diet-add-row select { flex: 1; padding: 10px 12px; background: var(--bg-input); border: 2px solid transparent; border-radius: var(--radius-sm); color: var(--text); font-size: 14px; outline: none; font-family: inherit; appearance: none; -webkit-appearance: none; background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='12' fill='%236b7280' viewBox='0 0 16 16'%3E%3Cpath d='M8 11L3 6h10l-5 5z'/%3E%3C/svg%3E"); background-repeat: no-repeat; background-position: right 12px center; }
+.diet-add-row input { padding: 10px 12px; background: var(--bg-input); border: 2px solid transparent; border-radius: var(--radius-sm); color: var(--text); font-size: 14px; outline: none; font-family: inherit; }
+.diet-add-row input:focus { border-color: var(--primary); }
+.diet-add-row input::placeholder { color: var(--text-tertiary); }
+.diet-add-row input.cal-input { width: 90px; }
+.diet-add-row input.food-input { flex: 1; }
+.diet-add-btn { width: 100%; padding: 12px; background: var(--primary); color: #fff; border: none; border-radius: var(--radius-sm); font-size: 14px; cursor: pointer; font-family: inherit; }
+.diet-add-btn:active { transform: scale(0.97); }
+.diet-meal-group { margin-bottom: 12px; }
+.diet-meal-title { font-size: 13px; font-weight: 600; color: var(--text-secondary); padding: 6px 4px; display: flex; align-items: center; gap: 6px; }
+.diet-meal-title .meal-cal { font-size: 12px; font-weight: 400; color: var(--primary); margin-left: auto; }
+.diet-food-item { background: var(--bg-card); border-radius: var(--radius-sm); padding: 10px 14px; margin-bottom: 6px; box-shadow: var(--shadow); display: flex; align-items: center; justify-content: space-between; }
+.diet-food-item .df-name { font-size: 14px; flex: 1; }
+.diet-food-item .df-cal { font-size: 13px; color: var(--primary); font-weight: 500; white-space: nowrap; }
+.diet-food-item .df-del { color: var(--expense); font-size: 12px; cursor: pointer; padding: 4px 8px; margin-left: 8px; }
+.diet-water-row { display: flex; gap: 8px; align-items: center; margin-bottom: 12px; background: var(--bg-card); border-radius: var(--radius-sm); padding: 12px; box-shadow: var(--shadow); }
+.diet-water-row .water-label { font-size: 14px; white-space: nowrap; }
+.diet-water-row .water-amount { font-size: 18px; font-weight: 700; color: #5DADE2; flex: 1; text-align: center; }
+.diet-water-row button { width: 36px; height: 36px; border-radius: 50%; border: 2px solid #5DADE2; background: none; color: #5DADE2; font-size: 18px; cursor: pointer; display: flex; align-items: center; justify-content: center; }
+.diet-water-row button:active { background: rgba(93,173,226,0.1); }
+.diet-water-row button.water-add { background: #5DADE2; color: #fff; }
+
 
 .habit-note-popup.show { display: block; }
 .habit-note-popup-title { font-size: 15px; font-weight: 600; margin-bottom: 12px; text-align: center; }
@@ -773,6 +803,7 @@ body { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', 'PingFang SC'
         <button class="action-sub-tab active" id="actionListTabBtn" onclick="setActionSubTab('list',this)">📋 行动清单</button>
         <button class="action-sub-tab" id="actionHabitTabBtn" onclick="setActionSubTab('habit',this)">📊 习惯打卡</button>
         <button class="action-sub-tab" id="actionBodyTabBtn" onclick="setActionSubTab('body',this)">⚖️ 体重</button>
+        <button class="action-sub-tab" id="actionDietTabBtn" onclick="setActionSubTab('diet',this)">🍽️ 饮食</button>
       </div>
       <div id="actionListSection">
         <div class="action-cal-nav">
@@ -821,6 +852,33 @@ body { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', 'PingFang SC'
           <div class="body-dim-grid" id="bodyDimGrid"></div>
           <div class="body-dim-section-title">📋 历史记录</div>
           <div class="body-history-list" id="bodyHistoryList"></div>
+        </div>
+      </div>
+      <div id="actionDietSection" style="display:none">
+        <div class="diet-section">
+          <div class="diet-day-summary" id="dietDaySummary"></div>
+          <div class="diet-water-row">
+            <span class="water-label">💧 饮水</span>
+            <button onclick="addWater(-1)">−</button>
+            <span class="water-amount" id="dietWaterAmount">0 杯</span>
+            <button class="water-add" onclick="addWater(1)">+</button>
+          </div>
+          <div class="diet-add-card">
+            <div class="diet-add-row">
+              <select id="dietMealType">
+                <option value="breakfast">🌅 早餐</option>
+                <option value="lunch">☀️ 午餐</option>
+                <option value="dinner">🌙 晚餐</option>
+                <option value="snack">🍪 加餐</option>
+              </select>
+              <input type="number" id="dietCalInput" class="cal-input" placeholder="千卡" inputmode="numeric">
+            </div>
+            <div class="diet-add-row">
+              <input type="text" id="dietFoodInput" class="food-input" placeholder="吃了什么（如：全麦面包、鸡胸肉沙拉）">
+            </div>
+            <button class="diet-add-btn" onclick="addDietEntry()">+ 记录</button>
+          </div>
+          <div id="dietMealGroups"></div>
         </div>
       </div>
     </div>
@@ -1942,7 +2000,7 @@ function initGlacierSnow() {
   }
 }
 function initThemeDecorations() { initSakuraPetals(); initMatchaLeaves(); initLavenderStars(); initCatPaws(); initGlacierSnow(); }
-function init() { loadState(); loadActionState(); loadHabitState(); loadBodyState(); setTheme(state.theme); initThemeDecorations(); document.getElementById('recordInput').addEventListener('input', handleInputChange); document.getElementById('expenseEnvelopeSelect').addEventListener('change', updateInvestAccountField); document.getElementById('expenseCategorySelect').addEventListener('change', onCategoryChange); renderOverview(); }
+function init() { loadState(); loadActionState(); loadHabitState(); loadBodyState(); loadDietState(); setTheme(state.theme); initThemeDecorations(); document.getElementById('recordInput').addEventListener('input', handleInputChange); document.getElementById('expenseEnvelopeSelect').addEventListener('change', updateInvestAccountField); document.getElementById('expenseCategorySelect').addEventListener('change', onCategoryChange); renderOverview(); }
 document.addEventListener('DOMContentLoaded', init);
 
 // ==================== 行动页面 - 数据存储 ====================
@@ -2194,6 +2252,108 @@ function renderBodyHistory() {
 
 
 // ==================== 行动页面 - 主函数 ====================
+
+// ==================== 饮食记录 ====================
+const DIET_STORAGE_KEY = 'zhizhang_diet';
+const MEAL_TYPES = [
+  { id: 'breakfast', name: '早餐', emoji: '🌅' },
+  { id: 'lunch', name: '午餐', emoji: '☀️' },
+  { id: 'dinner', name: '晚餐', emoji: '🌙' },
+  { id: 'snack', name: '加餐', emoji: '🍪' }
+];
+let dietState = { entries: {}, water: {} };
+let currentDietDate = new Date().toISOString().split('T')[0];
+
+function loadDietState() {
+  try {
+    const saved = localStorage.getItem(DIET_STORAGE_KEY);
+    if (saved) {
+      dietState = JSON.parse(saved);
+      if (!dietState.entries) dietState.entries = {};
+      if (!dietState.water) dietState.water = {};
+    }
+  } catch(e) { console.error('Load diet state error:', e); }
+}
+function saveDietState() {
+  try { localStorage.setItem(DIET_STORAGE_KEY, JSON.stringify(dietState)); } catch(e) { console.error('Save diet state error:', e); }
+}
+
+function addDietEntry() {
+  const mealType = document.getElementById('dietMealType').value;
+  const cal = parseInt(document.getElementById('dietCalInput').value);
+  const food = document.getElementById('dietFoodInput').value.trim();
+  if (!food) { showToast('请输入食物内容'); return; }
+  if (!dietState.entries[currentDietDate]) dietState.entries[currentDietDate] = [];
+  dietState.entries[currentDietDate].push({
+    id: 'd_' + Date.now() + '_' + Math.random().toString(36).substr(2,4),
+    meal: mealType,
+    food: food,
+    cal: cal || 0,
+    time: Date.now()
+  });
+  saveDietState();
+  document.getElementById('dietCalInput').value = '';
+  document.getElementById('dietFoodInput').value = '';
+  showToast('饮食已记录');
+  renderDietSection();
+}
+
+function deleteDietEntry(id) {
+  const entries = dietState.entries[currentDietDate] || [];
+  dietState.entries[currentDietDate] = entries.filter(e => e.id !== id);
+  if (dietState.entries[currentDietDate].length === 0) delete dietState.entries[currentDietDate];
+  saveDietState();
+  renderDietSection();
+}
+
+function addWater(delta) {
+  if (!dietState.water[currentDietDate]) dietState.water[currentDietDate] = 0;
+  dietState.water[currentDietDate] = Math.max(0, dietState.water[currentDietDate] + delta);
+  saveDietState();
+  renderDietSection();
+}
+
+function renderDietSection() {
+  currentDietDate = new Date().toISOString().split('T')[0];
+  renderDietSummary();
+  renderDietMealGroups();
+}
+
+function renderDietSummary() {
+  const container = document.getElementById('dietDaySummary');
+  const entries = dietState.entries[currentDietDate] || [];
+  const totalCal = entries.reduce((s, e) => s + (e.cal || 0), 0);
+  const water = dietState.water[currentDietDate] || 0;
+  let html = '<div class="diet-day-item"><div class="dd-label">今日摄入</div><div class="dd-value">' + totalCal + '<span class="dd-unit">kcal</span></div></div>';
+  html += '<div class="diet-day-item"><div class="dd-label">记录条目</div><div class="dd-value">' + entries.length + '<span class="dd-unit">条</span></div></div>';
+  html += '<div class="diet-day-item"><div class="dd-label">💧 饮水</div><div class="dd-value" style="color:#5DADE2">' + water + '<span class="dd-unit">杯</span></div></div>';
+  container.innerHTML = html;
+  document.getElementById('dietWaterAmount').textContent = water + ' 杯';
+}
+
+function renderDietMealGroups() {
+  const container = document.getElementById('dietMealGroups');
+  const entries = dietState.entries[currentDietDate] || [];
+  let html = '';
+  MEAL_TYPES.forEach(mt => {
+    const mealEntries = entries.filter(e => e.meal === mt.id);
+    if (mealEntries.length === 0) return;
+    const mealCal = mealEntries.reduce((s, e) => s + (e.cal || 0), 0);
+    html += '<div class="diet-meal-group">';
+    html += '<div class="diet-meal-title">' + mt.emoji + ' ' + mt.name + '<span class="meal-cal">' + mealCal + ' kcal</span></div>';
+    mealEntries.forEach(e => {
+      html += '<div class="diet-food-item">';
+      html += '<span class="df-name">' + e.food + '</span>';
+      if (e.cal) html += '<span class="df-cal">' + e.cal + ' kcal</span>';
+      html += '<span class="df-del" onclick="deleteDietEntry(\'' + e.id + '\')">删除</span>';
+      html += '</div>';
+    });
+    html += '</div>';
+  });
+  if (!html) html = '<div style="text-align:center;color:var(--text-tertiary);padding:20px;font-size:13px">今天还没记录饮食，开始吧</div>';
+  container.innerHTML = html;
+}
+
 function setActionSubTab(tab, btn) {
   currentActionSubTab = tab;
   document.querySelectorAll('.action-sub-tab').forEach(t => t.classList.remove('active'));
@@ -2201,8 +2361,10 @@ function setActionSubTab(tab, btn) {
   document.getElementById('actionListSection').style.display = tab === 'list' ? 'block' : 'none';
   document.getElementById('actionHabitSection').style.display = tab === 'habit' ? 'block' : 'none';
   document.getElementById('actionBodySection').style.display = tab === 'body' ? 'block' : 'none';
+  document.getElementById('actionDietSection').style.display = tab === 'diet' ? 'block' : 'none';
   if (tab === 'habit') renderHabitSection();
   if (tab === 'body') renderBodySection();
+  if (tab === 'diet') renderDietSection();
 }
 
 function renderActionPage() {
@@ -2211,8 +2373,10 @@ function renderActionPage() {
     renderActionList();
   } else if (currentActionSubTab === 'habit') {
     renderHabitSection();
-  } else {
+  } else if (currentActionSubTab === 'body') {
     renderBodySection();
+  } else {
+    renderDietSection();
   }
 }
 
